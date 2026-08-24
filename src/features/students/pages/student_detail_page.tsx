@@ -83,11 +83,11 @@ export default function StudentDetailPage({ studentId }: { studentId: string }) 
   ];
 
   return (
-    <DashboardLayout title="Student Details">
+    <DashboardLayout title="Member Details">
       {loading ? (
         <div className="h-40 rounded-xl skeleton" />
       ) : !student ? (
-        <p className="text-sm text-[#717171]">Student not found.</p>
+        <p className="text-sm text-[#717171]">Member not found.</p>
       ) : (
         <div className="space-y-5">
           <Tabs

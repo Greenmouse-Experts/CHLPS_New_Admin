@@ -24,8 +24,8 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary: [
-    "bg-black text-white border-transparent",
-    "hover:bg-[#1a1a1a] active:bg-[#333333]",
+    "bg-primary text-white border-transparent",
+    "hover:bg-[#1c176e] active:bg-[#120d46]",
     "disabled:bg-[#717171] disabled:cursor-not-allowed",
   ].join(" "),
 
@@ -120,7 +120,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           "inline-flex items-center justify-center cursor-pointer",
           "font-medium border",
           "transition-all duration-150 select-none",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-1",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
           // Variant
           variantStyles[variant],
           // Size

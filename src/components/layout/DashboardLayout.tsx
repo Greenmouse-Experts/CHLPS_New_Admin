@@ -2,9 +2,11 @@
 
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/tokens";
 import { ConfirmModal } from "../ui/Modal";
+import { AppImages } from "@/utils/assets/app_image";
 import {
   Category,
   Profile2User,
@@ -58,7 +60,7 @@ const NAV_ITEMS: NavItem[] = [
     roles: ["admin"],
     children: [
       { label: "Admins", href: "/admins", roles: ["admin"] },
-      { label: "Students", href: "/students", roles: ["admin"] },
+      { label: "Members", href: "/students", roles: ["admin"] },
     ],
   },
   {
@@ -163,11 +165,9 @@ function NavItemRow({
         <button
           onClick={() => setOpen((v) => !v)}
           className={cn(
-            "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium",
-            "transition-colors duration-150",
-            isActive
-              ? "text-black"
-              : "text-[#717171] hover:text-black hover:bg-[#F7F7F7]",
+            "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-md text-sm font-medium",
+            "transition-colors duration-150 text-white",
+            isActive ? "bg-white/10" : "hover:bg-white/10",
           )}
         >
           <span className="shrink-0">{item.icon}</span>
@@ -176,7 +176,7 @@ function NavItemRow({
               <span className="flex-1 text-left">{item.label}</span>
               <span
                 className={cn(
-                  "transition-transform duration-200 text-[#717171]",
+                  "transition-transform duration-200 text-white/70",
                   open && "rotate-180",
                 )}
               >
@@ -200,8 +200,8 @@ function NavItemRow({
                   className={cn(
                     "block px-3 py-1.5 rounded-md text-sm transition-colors",
                     childActive
-                      ? "font-semibold text-black"
-                      : "text-[#717171] hover:text-black hover:bg-[#F7F7F7]",
+                      ? "bg-accent text-white font-semibold"
+                      : "text-white/80 hover:text-white hover:bg-white/10",
                   )}
                 >
                   {child.label}
@@ -218,17 +218,15 @@ function NavItemRow({
     <Link
       href={item.href}
       className={cn(
-        "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium",
+        "flex items-center gap-2.5 px-3 py-2.5 rounded-md text-sm font-medium",
         "transition-colors duration-150",
         isActive
-          ? "bg-black text-white"
-          : "text-[#717171] hover:text-black hover:bg-[#F7F7F7]",
+          ? "bg-accent text-white"
+          : "text-white hover:bg-white/10",
       )}
       title={collapsed ? item.label : undefined}
     >
-      <span className={cn("shrink-0", isActive ? "text-white" : "")}>
-        {item.icon}
-      </span>
+      <span className="shrink-0 text-white">{item.icon}</span>
       {!collapsed && <span className="flex-1 text-[14px]">{item.label}</span>}
     </Link>
   );
@@ -262,20 +260,45 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "flex flex-col h-full bg-white border-r border-[#E7E9EB]",
+        "flex flex-col h-full bg-primary",
         "transition-all duration-300 ease-in-out",
-        collapsed ? "w-16" : "w-60",
+        collapsed ? "w-16" : "w-64",
       )}
     >
-      <div className="flex items-center justify-between h-16 px-4 border-b border-[#E7E9EB] shrink-0">
-        {!collapsed && (
-          <Link href="/" className="text-xl font-bold text-black tracking-tight">
-            CHL<span className="text-[#717171]">PS</span>
+      <div
+        className={cn(
+          "border-b border-white/10 shrink-0",
+          collapsed
+            ? "flex flex-col items-center gap-2 px-2 py-3"
+            : "flex items-center gap-2 px-3 py-4",
+        )}
+      >
+        {!collapsed ? (
+          <Link href="/" className="flex-1 min-w-0 ">
+            <Image
+              src={AppImages.fullLogo}
+              alt="CHLPS"
+              width={220}
+              height={72}
+              className="w-full h-auto object-contain"
+              priority
+            />
+          </Link>
+        ) : (
+          <Link href="/" className="shrink-0">
+            <Image
+              src={AppImages.logo}
+              alt="CHLPS"
+              width={36}
+              height={36}
+              className="rounded-full object-contain"
+              priority
+            />
           </Link>
         )}
         <button
           onClick={onToggle}
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-[#717171] hover:text-black hover:bg-[#F7F7F7] transition-colors ml-auto"
+          className="w-8 h-8 rounded-lg flex items-center justify-center text-white hover:bg-white/10 transition-colors shrink-0"
           aria-label="Toggle sidebar"
         >
           <SidebarIcon size={16} color="currentColor" />
@@ -293,13 +316,13 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
         ))}
       </nav>
 
-      <div className="shrink-0 px-2 pb-3 border-t border-[#E7E9EB] pt-2">
+      <div className="shrink-0 px-2 pb-3 border-t border-white/10 pt-2">
         <button
           onClick={() => setLogoutOpen(true)}
           title={collapsed ? "Logout" : undefined}
           className={cn(
-            "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium",
-            "text-[#E84D52] hover:bg-[#FFF0F0] transition-colors duration-150",
+            "w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium",
+            "text-[#FF8A8A] hover:bg-white/10 transition-colors duration-150",
           )}
         >
           <span className="shrink-0">
@@ -331,45 +354,45 @@ interface HeaderProps {
 
 export function Header({ title, onMenuToggle, user }: HeaderProps) {
   return (
-    <header className="h-16 border-b border-[#E7E9EB] bg-white flex items-center justify-between px-5 shrink-0">
+    <header className="h-16 bg-primary flex items-center justify-between px-5 shrink-0">
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuToggle}
-          className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-[#717171] hover:text-black hover:bg-[#F7F7F7]"
+          className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-white hover:bg-white/10"
         >
           <HambergerMenu size={18} color="currentColor" />
         </button>
         {title && (
-          <span className="text-sm font-semibold text-black uppercase tracking-wide">
+          <span className="text-sm font-semibold text-white uppercase tracking-wide">
             {title}
           </span>
         )}
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         <Link
           href="/notify"
-          className="relative w-9 h-9 min-w-9 max-w-9 rounded-full border border-gray-200 flex cursor-pointer items-center justify-center text-[#717171] hover:text-black bg-[#F7F7F7] hover:bg-gray-100 transition-colors"
+          className="relative h-8 px-2.5 rounded-md flex cursor-pointer items-center justify-center bg-accent hover:bg-[#e6ae06] transition-colors"
         >
-          <Notification size={18} color="currentColor" />
+          <Notification size={16} color="#161058" variant="Bold" />
         </Link>
 
         <Link
           href="/profile"
-          className="flex items-center gap-2 pl-2 bg-gray-100 rounded-full p-1 cursor-pointer shrink-0"
+          className="flex items-center gap-2 cursor-pointer shrink-0"
         >
-          <div className="w-8 h-8 shrink-0 rounded-full bg-black text-white flex items-center justify-center text-xs font-semibold overflow-hidden">
+          <div className="w-8 h-8 shrink-0 rounded-full bg-white/15 text-white flex items-center justify-center text-xs font-semibold overflow-hidden">
             {user.avatar ? (
-               
               <img src={user.avatar} alt="" className="w-full h-full object-cover" />
             ) : (
               (user?.fullName || "A").trim().toUpperCase()[0]
             )}
           </div>
-          <div className="hidden sm:block pr-2">
-            <p className="text-sm font-medium text-black leading-none">
-              {user.fullName || "Admin"}
+          <div className="hidden sm:flex items-center gap-1 pr-1">
+            <p className="text-sm font-semibold text-white uppercase tracking-wide leading-none">
+              {user.userRole?.replace("-", " ") || user.fullName || "Admin"}
             </p>
+            <ArrowDown2 size={12} color="#FFC107" />
           </div>
         </Link>
       </div>

@@ -23,30 +23,69 @@ const LoginPage: React.FC = () => {
   return (
     <div className="flex min-h-screen w-full">
       {isLoading && <LoadingOverlay />}
-      <div className="hidden lg:flex lg:w-1/2 bg-[#F7F7F7] relative overflow-hidden flex-col justify-between p-12">
-        <Image
-          src={AppImages.logo}
-          width={140}
-          height={40}
-          alt="CHLPS"
-          style={{ width: "auto", height: "auto" }}
-        />
-        <div className="max-w-md">
-          <h2 className="text-[32px] font-bold text-black leading-tight">
-            Welcome Admin
-          </h2>
-          <p className="text-sm text-[#717171] mt-3">
-            Sign in to manage programs, courses, students, and operations for
-            CHLPS.
-          </p>
+      <div className="hidden lg:flex lg:w-1/2 bg-primary relative overflow-hidden items-center justify-center px-12">
+        <svg
+          className="absolute inset-0 w-full h-full pointer-events-none"
+          viewBox="0 0 800 900"
+          preserveAspectRatio="xMidYMid slice"
+          aria-hidden
+        >
+          <circle cx="40" cy="860" r="420" fill="#2E2878" />
+          <rect
+            x="560"
+            y="20"
+            width="240"
+            height="150"
+            rx="6"
+            fill="#2E2878"
+            transform="rotate(32 680 95)"
+          />
+          <rect
+            x="30"
+            y="390"
+            width="100"
+            height="100"
+            fill="#35308A"
+            transform="rotate(45 80 440)"
+          />
+          <polygon points="800,360 800,530 680,445" fill="#2E2878" />
+          <rect
+            x="540"
+            y="700"
+            width="200"
+            height="120"
+            rx="4"
+            fill="#35308A"
+            transform="rotate(-22 640 760)"
+          />
+          <circle cx="720" cy="240" r="18" fill="#35308A" />
+        </svg>
+
+        <div className="relative z-10 flex flex-col items-center text-center max-w-md gap-10">
+          <Image
+            src={AppImages.fullLogo}
+            width={320}
+            height={110}
+            alt="CHLPS"
+            className="w-[280px] h-auto object-contain"
+            priority
+          />
+          <div>
+            <h2 className="text-[32px] font-bold text-white leading-tight">
+              Welcome Admin!
+            </h2>
+            <p className="text-base text-white/80 mt-4 leading-relaxed">
+              Sign in to manage programs, courses, students, and operations for
+              CHLPS.
+            </p>
+          </div>
         </div>
-        <p className="text-xs text-[#717171]">CHLPS Admin</p>
       </div>
 
       <div className="flex flex-1 items-center justify-center px-6 py-12 bg-white">
         <div className="w-full max-w-[440px]">
           <div className="mb-8 lg:hidden">
-            <Image src={AppImages.logo} width={120} height={36} alt="CHLPS" style={{ width: "auto", height: "auto" }} />
+            <Image src={AppImages.fullLogo} width={180} height={60} alt="CHLPS" className="w-[180px] h-auto" />
           </div>
           <div className="mb-8">
             <h1 className="text-[24px] font-bold text-black mb-1.5">

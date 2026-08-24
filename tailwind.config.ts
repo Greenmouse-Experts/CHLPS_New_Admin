@@ -6,6 +6,8 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
+          primary: "#161058",
+          accent: "#FFC107",
           black: "#000000",
           white: "#FFFFFF",
           gray: {
@@ -23,6 +25,8 @@ const config: Config = {
         success: "#38CB89",
         danger: "#E84D52",
         warning: "#EED202",
+        primary: "#161058",
+        accent: "#FFC107",
         muted: "#717171",
         border: "#E7E9EB",
         surface: "#F7F7F7",

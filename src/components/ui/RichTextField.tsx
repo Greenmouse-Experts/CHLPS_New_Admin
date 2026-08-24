@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import {
+  forwardRef,
+  memo,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import { cn } from "@/lib/tokens";
 
 interface RichTextFieldProps {
@@ -11,9 +18,49 @@ interface RichTextFieldProps {
   minHeight?: string;
 }
 
-function exec(command: string) {
-  document.execCommand(command, false);
+function isHtmlEmpty(html: string) {
+  return html.replace(/<[^>]+>/g, "").replace(/&nbsp;/gi, " ").trim() === "";
 }
+
+interface SurfaceHandle {
+  setHtml: (html: string) => void;
+  getHtml: () => string;
+  focus: () => void;
+}
+
+const EditorSurface = memo(
+  forwardRef<
+    SurfaceHandle,
+    { minHeight: string; placeholder?: string; onChange: (html: string) => void }
+  >(function EditorSurface({ minHeight, onChange }, ref) {
+    "use no memo";
+    const elRef = useRef<HTMLDivElement>(null);
+
+    useImperativeHandle(ref, () => ({
+      setHtml: (html: string) => {
+        if (elRef.current) elRef.current.innerHTML = html || "";
+      },
+      getHtml: () => elRef.current?.innerHTML ?? "",
+      focus: () => elRef.current?.focus(),
+    }));
+
+    return (
+      <div
+        ref={elRef}
+        contentEditable
+        role="textbox"
+        aria-multiline="true"
+        tabIndex={0}
+        suppressContentEditableWarning
+        className="relative z-[1] px-3 py-2 text-sm text-black outline-none cursor-text whitespace-pre-wrap break-words [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
+        style={{ minHeight }}
+        onInput={() => onChange(elRef.current?.innerHTML ?? "")}
+        onBlur={() => onChange(elRef.current?.innerHTML ?? "")}
+      />
+    );
+  }),
+  () => true,
+);
 
 export function RichTextField({
   label,
@@ -22,13 +69,35 @@ export function RichTextField({
   placeholder = "Write…",
   minHeight = "160px",
 }: RichTextFieldProps) {
-  const ref = useRef<HTMLDivElement>(null);
+  "use no memo";
+  const surfaceRef = useRef<SurfaceHandle>(null);
+  const lastEmitted = useRef(value);
+  const [empty, setEmpty] = useState(() => isHtmlEmpty(value));
 
   useEffect(() => {
-    if (ref.current && ref.current.innerHTML !== value) {
-      ref.current.innerHTML = value || "";
-    }
+    surfaceRef.current?.setHtml(value || "");
+    lastEmitted.current = value;
+    setEmpty(isHtmlEmpty(value));
+  }, []);
+
+  useEffect(() => {
+    if (value === lastEmitted.current) return;
+    surfaceRef.current?.setHtml(value || "");
+    lastEmitted.current = value;
+    setEmpty(isHtmlEmpty(value));
   }, [value]);
+
+  const emit = (html: string) => {
+    lastEmitted.current = html;
+    setEmpty(isHtmlEmpty(html));
+    onChange(html);
+  };
+
+  const run = (command: string) => {
+    surfaceRef.current?.focus();
+    document.execCommand(command, false);
+    emit(surfaceRef.current?.getHtml() ?? "");
+  };
 
   return (
     <div>
@@ -54,8 +123,7 @@ export function RichTextField({
               )}
               onMouseDown={(e) => {
                 e.preventDefault();
-                exec(btn.cmd);
-                onChange(ref.current?.innerHTML ?? "");
+                run(btn.cmd);
               }}
             >
               {btn.label}
@@ -63,16 +131,20 @@ export function RichTextField({
           ))}
         </div>
         <div
-          ref={ref}
-          contentEditable
-          role="textbox"
-          aria-label={label ?? placeholder}
-          suppressContentEditableWarning
-          className="px-3 py-2 text-sm outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-[#717171]"
-          style={{ minHeight }}
-          data-placeholder={placeholder}
-          onInput={() => onChange(ref.current?.innerHTML ?? "")}
-        />
+          className="relative"
+          onClick={() => surfaceRef.current?.focus()}
+        >
+          {empty && (
+            <p className="absolute left-3 top-2 text-sm text-[#717171] pointer-events-none select-none">
+              {placeholder}
+            </p>
+          )}
+          <EditorSurface
+            ref={surfaceRef}
+            minHeight={minHeight}
+            onChange={emit}
+          />
+        </div>
       </div>
     </div>
   );

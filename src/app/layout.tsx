@@ -17,6 +17,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: { default: "CHLPS Admin", template: "%s | CHLPS" },
   description: "CHLPS admin platform",
+  icons: {
+    icon: "/assets/images/chips-logo.png",
+    apple: "/assets/images/chips-logo.png",
+  },
 };
 
 export default function RootLayout({

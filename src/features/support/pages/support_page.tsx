@@ -54,7 +54,7 @@ export default function SupportPage() {
           <h2 className="font-semibold">Contact Messages</h2>
           <div className="flex items-center gap-2 border border-[#E7E9EB] rounded-lg px-3 h-9 w-64">
             <SearchNormal1 size={13} color="#717171" />
-            <input className="flex-1 text-xs outline-none" placeholder="Search by name, email or interest" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <input className="flex-1 text-xs outline-none focus:outline-none focus-visible:outline-none ring-0 bg-transparent" placeholder="Search by name, email or interest" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
         </div>
         <DataTable className="border-none" columns={columns} data={filtered} keyField="id" loading={loading} actions={actions} emptyText="No messages" />

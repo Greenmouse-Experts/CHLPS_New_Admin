@@ -94,7 +94,7 @@ export default function CoursesPage() {
           <div className="flex items-center gap-2 border border-[#E7E9EB] rounded-lg px-3 h-10">
             <SearchNormal1 size={14} color="#717171" />
             <input
-              className="flex-1 text-sm outline-none"
+              className="flex-1 text-sm outline-none focus:outline-none focus-visible:outline-none ring-0 bg-transparent"
               placeholder="Search"
               value={filters.search}
               onChange={(e) => setFilters({ ...filters, search: e.target.value })}

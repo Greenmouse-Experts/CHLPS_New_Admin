@@ -144,7 +144,7 @@ function Pagination({ page, pageSize, total, onChange }: PaginationProps) {
               className={cn(
                 "w-7 h-7 rounded-md flex items-center justify-center text-xs font-medium transition-colors",
                 page === p
-                  ? "bg-black text-white"
+                  ? "bg-primary text-white"
                   : "text-[#717171] hover:bg-[#F7F7F7]",
               )}
             >

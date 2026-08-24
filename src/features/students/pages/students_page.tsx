@@ -67,7 +67,7 @@ export default function StudentsPage() {
   ];
 
   return (
-    <DashboardLayout title="Students">
+    <DashboardLayout title="Members">
       <div className="space-y-3 bg-white rounded-md border border-[#F0F0F0] pt-4 pb-2">
         <div className="flex items-center px-4">
           <div className="flex items-center gap-2 border border-[#E7E9EB] rounded-lg px-3 h-9 bg-white w-64">
@@ -76,8 +76,8 @@ export default function StudentsPage() {
               type="text"
               value={search}
               onChange={(e) => handleSearch(e.target.value)}
-              placeholder="Search students"
-              className="flex-1 text-xs outline-none bg-transparent"
+              placeholder="Search members"
+              className="flex-1 text-xs outline-none focus:outline-none focus-visible:outline-none ring-0 bg-transparent"
             />
           </div>
         </div>
@@ -91,7 +91,7 @@ export default function StudentsPage() {
             data={students}
             keyField="id"
             actions={actions}
-            emptyText="No students found"
+            emptyText="No members found"
             pagination={{ page: 1, pageSize: Math.max(total, 1), total, onChange: () => {} }}
           />
         )}

@@ -72,7 +72,7 @@ export default function AdminsPage() {
               value={search}
               onChange={(e) => handleSearch(e.target.value)}
               placeholder="Search"
-              className="flex-1 text-xs outline-none bg-transparent placeholder-[#ADADAD]"
+              className="flex-1 text-xs outline-none focus:outline-none focus-visible:outline-none ring-0 bg-transparent placeholder-[#ADADAD]"
             />
           </div>
           <Button leftIcon={<AddCircle size={14} color="currentColor" />} onClick={() => setAddOpen(true)}>

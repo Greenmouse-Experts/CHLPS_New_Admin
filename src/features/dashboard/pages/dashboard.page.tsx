@@ -62,7 +62,7 @@ const DashboardPage = () => {
               icon={<Profile2User size={20} color="#717171" />}
             />
             <StatCard
-              title="Students"
+              title="Members"
               value={analytics.students ?? 0}
               loading={isLoading}
               icon={<People size={20} color="#717171" />}

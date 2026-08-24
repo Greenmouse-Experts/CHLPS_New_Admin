@@ -1,3 +1,3 @@
 export class AppIcons {
-  static logo = "/logo.svg";
+  static logo = "/assets/images/chips-logo.png";
 }

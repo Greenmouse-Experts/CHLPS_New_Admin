@@ -45,7 +45,7 @@ export default function BlogEditorPage({ postId }: { postId?: string }) {
   return (
     <DashboardLayout title={postId ? "Edit Post" : "Create Post"}>
       <form
-        className="bg-white rounded-xl border border-[#E7E9EB] p-6 space-y-4 max-w-3xl"
+        className="bg-white rounded-xl border border-[#E7E9EB] p-6 space-y-4 w-full"
         onSubmit={async (e) => {
           e.preventDefault();
           setBusy(true);
@@ -68,7 +68,7 @@ export default function BlogEditorPage({ postId }: { postId?: string }) {
       >
         <TextField label="Title" required value={title} onChange={(e) => setTitle(e.target.value)} />
         <TextField label="Brief" value={brief} onChange={(e) => setBrief(e.target.value)} />
-        <RichTextField label="Description" value={description} onChange={setDescription} minHeight="200px" />
+        <RichTextField label="Description" value={description} onChange={setDescription} minHeight="360px" placeholder="Write the post body…" />
         <Select label="Published" value={published} onChange={setPublished}
           options={[{ label: "Draft", value: "false" }, { label: "Published", value: "true" }]} />
         <div>

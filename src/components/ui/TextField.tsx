@@ -138,8 +138,8 @@ const TextField = React.forwardRef<HTMLInputElement, TextFieldProps>(
               "focus:outline-none",
 
               hasError
-                ? "border-[#E84D52] focus:border-[#E84D52] focus:ring-1 focus:ring-[#E84D52]/30"
-                : "border-[#E7E9EB] focus:border-[#E7E9EB] focus:ring-1 focus:ring-[#E7E9EB]/30",
+                ? "border-[#E84D52] focus:border-[#E84D52] focus:ring-0"
+                : "border-[#E7E9EB] focus:border-[#E7E9EB] focus:ring-0",
               "disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[#F7F7F7]",
 
               sizes.input,
