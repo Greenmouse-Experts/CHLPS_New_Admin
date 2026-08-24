@@ -56,10 +56,14 @@ const NAV_ITEMS: NavItem[] = [
     icon: <Category size={16} color="currentColor" />,
   },
   {
-    label: "Admin",
+    label: "User Management",
     href: "/admins",
     icon: <Profile2User size={16} color="currentColor" />,
     roles: ["admin"],
+    children: [
+      { label: "Admins", href: "/admins", roles: ["admin"] },
+      { label: "Members", href: "/students", roles: ["admin"] },
+    ],
   },
   {
     label: "Membership",
