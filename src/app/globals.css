@@ -1,0 +1,142 @@
+@import "tailwindcss";
+@config "../../tailwind.config.ts";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --color-black: #000000;
+  --color-white: #ffffff;
+  --color-gray-700: #717171;
+  --color-gray-200: #e7e9eb;
+  --color-gray-100: #f1f1f1;
+  --color-gray-50: #f7f7f7;
+
+  --color-success: #38cb89;
+  --color-success-bg: #e8f8f1;
+  --color-danger: #e84d52;
+  --color-danger-bg: #fdf0f0;
+  --color-warning: #eed202;
+  --color-warning-bg: #fefae0;
+  --color-orange: #f5a623;
+  --color-orange-bg: #fef4e7;
+  --color-info-bg: #eff6ff;
+
+ 
+  --sidebar-width: 240px;
+  --header-height: 64px;
+
+ 
+  --font-sans: "Geist", "DM Sans", system-ui, sans-serif;
+  --font-mono: "Geist Mono", monospace;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--color-gray-50);
+  color: var(--color-black);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-gray-200);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gray-700);
+}
+
+
+:focus-visible {
+  outline: 2px solid var(--color-black);
+  outline-offset: 2px;
+}
+
+
+@layer utilities {
+  .flipex-card {
+    @apply bg-white rounded-lg border border-[#E7E9EB] shadow-sm;
+  }
+
+  .flipex-input-base {
+    @apply w-full rounded-lg border border-[#E7E9EB] bg-white px-3 py-2.5 text-sm
+           text-black placeholder:text-[#717171]
+           transition-colors duration-150
+           focus:outline-none focus:border-black focus:ring-1 focus:ring-black
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .flipex-label {
+    @apply block text-sm font-medium text-black mb-1.5;
+  }
+
+  .status-dot {
+    @apply inline-block w-1.5 h-1.5 rounded-full flex-shrink-0;
+  }
+
+  .page-container {
+    @apply flex-1 min-h-0 overflow-y-auto;
+  }
+
+  .section-title {
+    @apply text-lg font-semibold text-black;
+  }
+}
+
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.2s ease-out forwards;
+}
+
+
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+
+@media print {
+  .no-print { display: none !important; }
+}
