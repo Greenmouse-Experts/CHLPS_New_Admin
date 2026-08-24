@@ -10,6 +10,8 @@ import { AppImages } from "@/utils/assets/app_image";
 import {
   Category,
   Profile2User,
+  Personalcard,
+  Calendar,
   Book,
   MessageQuestion,
   MedalStar,
@@ -54,14 +56,22 @@ const NAV_ITEMS: NavItem[] = [
     icon: <Category size={16} color="currentColor" />,
   },
   {
-    label: "User Management",
+    label: "Admin",
     href: "/admins",
     icon: <Profile2User size={16} color="currentColor" />,
     roles: ["admin"],
-    children: [
-      { label: "Admins", href: "/admins", roles: ["admin"] },
-      { label: "Members", href: "/students", roles: ["admin"] },
-    ],
+  },
+  {
+    label: "Membership",
+    href: "/membership",
+    icon: <Personalcard size={16} color="currentColor" />,
+    roles: ["admin"],
+  },
+  {
+    label: "Events",
+    href: "/events",
+    icon: <Calendar size={16} color="currentColor" />,
+    roles: ["admin"],
   },
   {
     label: "Courses",

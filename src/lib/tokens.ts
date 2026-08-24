@@ -31,8 +31,10 @@ export type StatusVariant =
   | "published"
   | "unpublished"
   | "draft"
+  | "closed"
   | "confirmed"
   | "cancelled"
+  | "completed"
   | "revoked"
   | "unread"
   | "read";
@@ -101,6 +103,12 @@ export const statusConfig: Record<
     textColor: "#374151",
     bgColor: "#F1F1F1",
   },
+  closed: {
+    label: "Closed",
+    dotColor: "#E84D52",
+    textColor: "#991B1B",
+    bgColor: "#FDF0F0",
+  },
   confirmed: {
     label: "Completed",
     dotColor: "#38CB89",
@@ -112,6 +120,12 @@ export const statusConfig: Record<
     dotColor: "#E84D52",
     textColor: "#991B1B",
     bgColor: "#FDF0F0",
+  },
+  completed: {
+    label: "Completed",
+    dotColor: "#38CB89",
+    textColor: "#166534",
+    bgColor: "#E8F8F1",
   },
   revoked: {
     label: "Revoked",

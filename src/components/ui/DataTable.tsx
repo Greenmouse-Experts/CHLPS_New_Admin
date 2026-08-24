@@ -347,7 +347,7 @@ function DataTable<T extends Record<string, any>>({
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full min-w-max text-sm">
           <thead>
             <tr className="border-b border-[#E7E9EB] bg-[#FAFAFA]">
               {selectable && (
