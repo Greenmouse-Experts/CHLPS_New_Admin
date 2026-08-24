@@ -25,11 +25,11 @@ import {
   Teacher,
   Edit,
 } from "iconsax-react";
-import ProtectedRoute from "@/lib/providers/ProtectedRoute";
 import { UserState, resetUser } from "@/features/auth/reducers/user_slice";
 import { RootState } from "@/lib/store/store";
 import { useSelector, useDispatch } from "react-redux";
 import { getDB } from "@/lib/storage/user_db";
+import { usePageTitle, usePageTitleValue } from "@/lib/providers/page_title";
 
 type Role = string;
 
@@ -430,8 +430,14 @@ function collectRoutes(items: NavItem[]): { href: string; roles?: Role[] }[] {
 }
 
 export function DashboardLayout({ children, title }: DashboardLayoutProps) {
+  usePageTitle(title);
+  return <>{children}</>;
+}
+
+export function DashboardShell({ children }: { children: React.ReactNode }) {
   const user = useSelector((state: RootState) => state.user);
   const pathname = usePathname();
+  const title = usePageTitleValue();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -449,42 +455,40 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
   }, [pathname, user.userRole]);
 
   return (
-    <ProtectedRoute>
-      <div className="flex h-screen bg-[#F7F7F7] overflow-hidden w-full">
-        {mobileOpen && (
-          <div
-            className="fixed inset-0 bg-black/30 z-30 md:hidden"
-            onClick={() => setMobileOpen(false)}
-          />
-        )}
-
-        <div className="hidden md:flex shrink-0">
-          <Sidebar
-            collapsed={sidebarCollapsed}
-            onToggle={() => setSidebarCollapsed((v) => !v)}
-          />
-        </div>
-
+    <div className="flex h-screen bg-[#F7F7F7] overflow-hidden w-full">
+      {mobileOpen && (
         <div
-          className={cn(
-            "fixed inset-y-0 left-0 z-40 md:hidden transition-transform duration-300",
-            mobileOpen ? "translate-x-0" : "-translate-x-full",
-          )}
-        >
-          <Sidebar onToggle={() => setMobileOpen(false)} />
-        </div>
+          className="fixed inset-0 bg-black/30 z-30 md:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
 
-        <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-          <Header
-            title={title}
-            onMenuToggle={() => setMobileOpen(true)}
-            user={user}
-          />
-          <main className="flex-1 overflow-y-auto p-5 md:p-6">
-            {hasAccess ? children : <AccessDenied />}
-          </main>
-        </div>
+      <div className="hidden md:flex shrink-0">
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          onToggle={() => setSidebarCollapsed((v) => !v)}
+        />
       </div>
-    </ProtectedRoute>
+
+      <div
+        className={cn(
+          "fixed inset-y-0 left-0 z-40 md:hidden transition-transform duration-300",
+          mobileOpen ? "translate-x-0" : "-translate-x-full",
+        )}
+      >
+        <Sidebar onToggle={() => setMobileOpen(false)} />
+      </div>
+
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+        <Header
+          title={title}
+          onMenuToggle={() => setMobileOpen(true)}
+          user={user}
+        />
+        <main className="flex-1 overflow-y-auto p-5 md:p-6">
+          {hasAccess ? children : <AccessDenied />}
+        </main>
+      </div>
+    </div>
   );
 }

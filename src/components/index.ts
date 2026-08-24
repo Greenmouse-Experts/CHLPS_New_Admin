@@ -1,5 +1,5 @@
 // Layout
-export { DashboardLayout, Sidebar, Header } from "./layout/DashboardLayout";
+export { DashboardLayout, DashboardShell, Sidebar, Header } from "./layout/DashboardLayout";
 
 export {
   StatCard,
