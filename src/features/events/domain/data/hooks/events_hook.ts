@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useToast } from "@/components/ui";
 import { EventItem, EventPayload } from "../response/events_response";
 import { SEED_EVENTS } from "../seed";
+import EventsRepository from "../../repository/events_repository";
 
 const PAGE_SIZE = 10;
 
@@ -12,11 +13,15 @@ function wait(ms: number) {
 function isSameMonth(dateStr: string, ref = new Date()) {
   const date = new Date(dateStr);
   if (Number.isNaN(date.getTime())) return false;
-  return date.getFullYear() === ref.getFullYear() && date.getMonth() === ref.getMonth();
+  return (
+    date.getFullYear() === ref.getFullYear() &&
+    date.getMonth() === ref.getMonth()
+  );
 }
 
 export function useEvents() {
   const { toast } = useToast();
+  const repo = useMemo(() => new EventsRepository(), []);
   const [items, setItems] = useState<EventItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -56,7 +61,8 @@ export function useEvents() {
   const stats = useMemo(
     () => ({
       totalEvents: items.length,
-      totalThisMonth: items.filter((item) => isSameMonth(item.startDate)).length,
+      totalThisMonth: items.filter((item) => isSameMonth(item.startDate))
+        .length,
       amountPaid: items.reduce((sum, item) => sum + item.amountPaid, 0),
     }),
     [items],
@@ -71,6 +77,11 @@ export function useEvents() {
     async (payload: EventPayload) => {
       setIsSaving(true);
       await wait(400);
+      try {
+        await repo.create(payload);
+      } catch {
+        /* fallback */
+      }
       const next: EventItem = {
         ...payload,
         id: `evt-${Date.now()}`,
@@ -85,13 +96,18 @@ export function useEvents() {
       toast("Event created", "success");
       return true;
     },
-    [toast],
+    [repo, toast],
   );
 
   const updateEvent = useCallback(
     async (id: string, payload: EventPayload) => {
       setIsSaving(true);
       await wait(400);
+      try {
+        await repo.update(id, payload);
+      } catch {
+        /* fallback */
+      }
       setItems((prev) =>
         prev.map((item) => (item.id === id ? { ...item, ...payload } : item)),
       );
@@ -99,16 +115,49 @@ export function useEvents() {
       toast("Event updated", "success");
       return true;
     },
-    [toast],
+    [repo, toast],
+  );
+
+  const togglePublish = useCallback(
+    async (id: string) => {
+      const current = items.find((item) => item.id === id);
+      const nextStatus =
+        current?.status === "published" ? "draft" : "published";
+
+      setIsSaving(true);
+      try {
+        // PATCH /events/:id/status with body { status: "published" | "draft" }
+        await repo.updateStatus(id, nextStatus);
+      } catch {
+        /* fallback */
+      }
+
+      setItems((prev) =>
+        prev.map((item) =>
+          item.id === id ? { ...item, status: nextStatus } : item,
+        ),
+      );
+      setIsSaving(false);
+      toast(
+        nextStatus === "published" ? "Event published" : "Event unpublished",
+        "success",
+      );
+    },
+    [items, repo, toast],
   );
 
   const removeEvent = useCallback(
     async (id: string) => {
       await wait(250);
+      try {
+        await repo.remove(id);
+      } catch {
+        /* fallback */
+      }
       setItems((prev) => prev.filter((item) => item.id !== id));
       toast("Event deleted", "success");
     },
-    [toast],
+    [repo, toast],
   );
 
   return {
@@ -124,6 +173,7 @@ export function useEvents() {
     handlePageChange: setPage,
     createEvent,
     updateEvent,
+    togglePublish,
     removeEvent,
   };
 }

@@ -39,11 +39,19 @@ export function useCourses() {
     async (p = page, f = filters) => {
       try {
         setIsLoading(true);
-        const res = await repo.list(isAdmin, {
+        const params: Record<string, unknown> = {
           page: p,
           pageSize: PAGE_SIZE,
-          ...f,
+        };
+
+        // Do not pass empty strings, null, or undefined query params to the API (e.g. program[id]="")
+        Object.entries(f).forEach(([key, value]) => {
+          if (value !== "" && value !== null && value !== undefined) {
+            params[key] = value;
+          }
         });
+
+        const res = await repo.list(isAdmin, params);
         if (res.success && res.data) {
           setCourses(res.data.items);
           setCount(res.data.count);
@@ -63,7 +71,10 @@ export function useCourses() {
     });
   }, []);
 
-  const createCourse = async (payload: Omit<CreateCoursePayload, "coverImage">, file: File) => {
+  const createCourse = async (
+    payload: Omit<CreateCoursePayload, "coverImage">,
+    file: File,
+  ) => {
     try {
       setBusy(true);
       const up = await uploads.upload("image", file);
@@ -71,7 +82,11 @@ export function useCourses() {
         toast(up.message, "danger");
         return false;
       }
-      const res = await repo.create({ ...payload, coverImage: up.url, previewUrl: null });
+      const res = await repo.create({
+        ...payload,
+        coverImage: up.url,
+        previewUrl: null,
+      });
       if (res.success) {
         toast(res.message, "success");
         await fetchCourses(1, filters);
@@ -84,7 +99,9 @@ export function useCourses() {
     }
   };
 
-  const mutate = async (fn: () => Promise<{ success: boolean; message: string }>) => {
+  const mutate = async (
+    fn: () => Promise<{ success: boolean; message: string }>,
+  ) => {
     const res = await fn();
     if (res.success) {
       toast(res.message, "success");
@@ -112,7 +129,8 @@ export function useCourses() {
     createCourse,
     publish: (id: string, isPublished: boolean) =>
       mutate(() => repo.update(id, { isPublished }, isAdmin)),
-    feature: (id: string, featured: boolean) => mutate(() => repo.feature(id, featured)),
+    feature: (id: string, featured: boolean) =>
+      mutate(() => repo.feature(id, featured)),
     remove: (id: string) => mutate(() => repo.remove(id)),
   };
 }

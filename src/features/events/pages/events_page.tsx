@@ -1,17 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { DashboardLayout, StatCard } from "@/components";
+import { Button, ConfirmModal, Divider, StatusBadge } from "@/components/ui";
+import CustomTable, { columnType } from "@/components/tables/CustomTable";
+import { Actions } from "@/components/tables/pop-up";
 import {
-  Button,
-  Column,
-  ConfirmModal,
-  DataTable,
-  Divider,
-  StatusBadge,
-  TableAction,
-} from "@/components/ui";
-import { AddCircle, Calendar, People, SearchNormal1, Wallet3 } from "iconsax-react";
+  AddCircle,
+  Calendar,
+  People,
+  SearchNormal1,
+  Wallet3,
+} from "iconsax-react";
 import { useEvents } from "../domain/data/hooks/events_hook";
 import {
   EventItem,
@@ -20,8 +20,14 @@ import {
   labelOf,
 } from "../domain/data/response/events_response";
 import { EventModal } from "../components/event_modal";
+import { EventDetailModal } from "../components/event_detail_modal";
 import { formatDate } from "@/utils/helper/formate_date";
 import { formatCurrency } from "@/utils/helper/format_num";
+import { ModalHandle } from "@/components/DialogModal";
+
+type DetailModalHandle = ModalHandle & {
+  setEvent: (event: EventItem | null) => void;
+};
 
 export default function EventsPage() {
   const {
@@ -37,91 +43,138 @@ export default function EventsPage() {
     handlePageChange,
     createEvent,
     updateEvent,
+    togglePublish,
     removeEvent,
   } = useEvents();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<EventItem | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const detailModalRef = useRef<DetailModalHandle>(null);
 
-  const columns: Column<EventItem>[] = [
-    {
-      key: "name",
-      title: "Event",
-      width: 280,
-      className: "min-w-[280px] w-[280px] max-w-[280px] whitespace-normal",
-      render: (_, row) => (
-        <div className="flex items-start gap-3 w-[280px]">
-          {row.image ? (
-            <img
-              src={row.image}
-              alt=""
-              className="w-10 h-10 rounded-lg object-cover border border-[#E7E9EB] shrink-0"
-            />
-          ) : (
-            <div className="w-10 h-10 rounded-lg bg-[#F7F7F7] shrink-0" />
-          )}
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-black">{row.name}</p>
-            <p className="text-xs text-[#717171] whitespace-normal break-words">
-              {row.description}
-            </p>
+  const openDetailModal = (item: EventItem) => {
+    detailModalRef.current?.setEvent(item);
+    detailModalRef.current?.open();
+  };
+
+  const columns: columnType<EventItem>[] = useMemo(
+    () => [
+      {
+        key: "name",
+        label: "Event",
+        render: (_, row) => (
+          <div className="flex items-start gap-3 min-w-[240px] max-w-[320px]">
+            {row.image ? (
+              <img
+                src={row.image}
+                alt=""
+                className="w-10 h-10 rounded-lg object-cover border border-base-300 shrink-0"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-lg bg-base-200 shrink-0" />
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-base-content line-clamp-1 hover:underline cursor-pointer">
+                {row.name}
+              </p>
+              <p className="text-xs text-secondary line-clamp-1">
+                {row.description}
+              </p>
+            </div>
           </div>
-        </div>
-      ),
-    },
-    {
-      key: "category",
-      title: "Category",
-      className: "whitespace-nowrap",
-      render: (v) => labelOf(EVENT_CATEGORIES, v),
-    },
-    {
-      key: "format",
-      title: "Format",
-      className: "whitespace-nowrap",
-      render: (v) => labelOf(EVENT_FORMATS, v),
-    },
-    {
-      key: "startDate",
-      title: "Starts",
-      className: "whitespace-nowrap",
-      render: (v, row) => `${formatDate(v, "DD MMM YYYY")} · ${row.startTime}`,
-    },
-    {
-      key: "price",
-      title: "Price",
-      className: "whitespace-nowrap",
-      render: (v, row) =>
-        Number(v) === 0
-          ? "Free"
-          : formatCurrency(Number(v) || 0, { currency: row.currency }),
-    },
-    {
-      key: "attendeesCount",
-      title: "Attendees",
-      className: "whitespace-nowrap",
-    },
-    {
-      key: "status",
-      title: "Status",
-      className: "whitespace-nowrap",
-      render: (v) => <StatusBadge status={v} />,
-    },
-  ];
+        ),
+      },
+      {
+        key: "category",
+        label: "Category",
+        render: (v) => (
+          <span className="text-sm text-base-content whitespace-nowrap">
+            {labelOf(EVENT_CATEGORIES, v)}
+          </span>
+        ),
+      },
+      {
+        key: "format",
+        label: "Format",
+        render: (v) => (
+          <span className="text-sm text-base-content capitalize whitespace-nowrap">
+            {labelOf(EVENT_FORMATS, v)}
+          </span>
+        ),
+      },
+      {
+        key: "startDate",
+        label: "Starts",
+        render: (v, row) => (
+          <span className="text-sm text-secondary whitespace-nowrap">
+            {formatDate(v, "DD MMM YYYY")} · {row.startTime}
+          </span>
+        ),
+      },
+      {
+        key: "price",
+        label: "Price",
+        render: (v, row) => (
+          <span className="text-sm font-medium text-base-content whitespace-nowrap">
+            {Number(v) === 0
+              ? "Free"
+              : formatCurrency(Number(v) || 0, { currency: row.currency })}
+          </span>
+        ),
+      },
+      {
+        key: "attendeesCount",
+        label: "Attendees",
+        render: (v) => (
+          <span className="text-sm text-base-content whitespace-nowrap font-medium">
+            {v ?? 0}
+          </span>
+        ),
+      },
+      {
+        key: "status",
+        label: "Status",
+        render: (v) => <StatusBadge status={v} />,
+      },
+    ],
+    [],
+  );
 
-  const actions: TableAction<EventItem>[] = [
+  const actions: Actions<EventItem>[] = [
     {
+      key: "view_details",
+      label: "View Details",
+      action: (row) => openDetailModal(row),
+    },
+    {
+      key: "toggle_publish",
+      label: "Publish / Un-publish",
+      render: (row) => (
+        <span
+          className={
+            row.status === "published"
+              ? "text-amber-600 font-medium"
+              : "text-emerald-600 font-medium"
+          }
+        >
+          {row.status === "published" ? "Un-publish" : "Publish"}
+        </span>
+      ),
+      action: (row) => togglePublish(row.id),
+    },
+    {
+      key: "edit",
       label: "Edit",
-      onClick: (row) => {
+      action: (row) => {
         setEditing(row);
         setModalOpen(true);
       },
     },
     {
+      key: "delete",
       label: "Delete",
-      variant: "danger",
-      onClick: (row) => setDeleteId(row.id),
+      render: () => <span className="text-error font-medium">Delete</span>,
+      action: (row) => setDeleteId(row.id),
     },
   ];
 
@@ -143,22 +196,25 @@ export default function EventsPage() {
           />
           <StatCard
             title="Amount Paid"
-            value={formatCurrency(stats.amountPaid, { currency: "NGN", decimals: 0 })}
+            value={formatCurrency(stats.amountPaid, {
+              currency: "NGN",
+              decimals: 0,
+            })}
             loading={isLoading}
             icon={<Wallet3 size={20} color="#717171" />}
           />
         </div>
 
-        <div className="space-y-3 bg-white rounded-md border border-[#F0F0F0] pt-4 pb-2">
-          <div className="flex flex-wrap items-center justify-between px-4 gap-3">
-            <div className="flex items-center gap-2 border border-[#E7E9EB] rounded-lg px-3 h-9 bg-white w-52">
-              <SearchNormal1 size={13} color="#717171" />
+        <div className="space-y-3 bg-white rounded-xl border border-base-300 p-4 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 border border-base-300 rounded-lg px-3 h-10 bg-white w-64 focus-within:border-primary transition-colors">
+              <SearchNormal1 size={14} color="#717171" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => handleSearch(e.target.value)}
-                placeholder="Search events"
-                className="flex-1 text-xs outline-none focus:outline-none focus-visible:outline-none ring-0 bg-transparent placeholder-[#ADADAD]"
+                placeholder="Search events..."
+                className="flex-1 text-sm outline-none focus:outline-none focus-visible:outline-none ring-0 bg-transparent placeholder-secondary/50"
               />
             </div>
             <Button
@@ -172,24 +228,34 @@ export default function EventsPage() {
             </Button>
           </div>
           <Divider />
-          <DataTable
-            className="border-none rounded-none"
-            columns={columns}
-            data={events}
-            keyField="id"
-            loading={isLoading}
-            actions={actions}
-            title="Events"
-            emptyText="No events found"
-            pagination={{
-              page,
-              pageSize,
-              total,
-              onChange: handlePageChange,
-            }}
-          />
+          {isLoading ? (
+            <div className="h-48 rounded-xl skeleton" />
+          ) : (
+            <CustomTable
+              ring={false}
+              columns={columns}
+              data={events}
+              actions={actions}
+              totalCount={total}
+              onRowClick={(row) => openDetailModal(row)}
+              paginationProps={{
+                page,
+                pageSize,
+                setPagination: handlePageChange,
+              }}
+            />
+          )}
         </div>
       </div>
+
+      <EventDetailModal
+        ref={detailModalRef}
+        onEdit={(item) => {
+          setEditing(item);
+          setModalOpen(true);
+        }}
+        onTogglePublish={(id) => togglePublish(id)}
+      />
 
       <EventModal
         open={modalOpen}

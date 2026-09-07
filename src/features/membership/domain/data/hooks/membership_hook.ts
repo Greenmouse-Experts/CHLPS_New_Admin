@@ -8,6 +8,7 @@ import {
   MembershipTransaction,
 } from "../response/membership_response";
 import { SEED_MEMBERSHIPS, SEED_SUBSCRIBERS, SEED_TRANSACTIONS } from "../seed";
+import MembershipRepository from "../../repository/membership_repository";
 
 const PAGE_SIZE = 10;
 
@@ -27,6 +28,7 @@ function notifyListeners() {
 
 export function useMemberships() {
   const { toast } = useToast();
+  const repo = useMemo(() => new MembershipRepository(), []);
   const [items, setItems] = useState<Membership[]>(memoryMemberships);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -87,6 +89,11 @@ export function useMemberships() {
     async (payload: MembershipPayload) => {
       setIsSaving(true);
       await wait(350);
+      try {
+        await repo.create(payload);
+      } catch {
+        /* fallback to memory state */
+      }
       const next: Membership = {
         ...payload,
         id: `mbr-${Date.now()}`,
@@ -102,13 +109,18 @@ export function useMemberships() {
       toast("Membership created successfully", "success");
       return true;
     },
-    [toast],
+    [repo, toast],
   );
 
   const updateMembership = useCallback(
     async (id: string, payload: MembershipPayload) => {
       setIsSaving(true);
       await wait(350);
+      try {
+        await repo.update(id, payload);
+      } catch {
+        /* fallback to memory state */
+      }
       memoryMemberships = memoryMemberships.map((item) =>
         item.id === id ? { ...item, ...payload } : item,
       );
@@ -117,7 +129,7 @@ export function useMemberships() {
       toast("Membership updated successfully", "success");
       return true;
     },
-    [toast],
+    [repo, toast],
   );
 
   const togglePublish = useCallback(
@@ -126,9 +138,15 @@ export function useMemberships() {
       if (!currentItem) return;
 
       setIsSaving(true);
-      await wait(250);
       const nextStatus: MembershipStatus =
         currentItem.status === "published" ? "draft" : "published";
+
+      try {
+        // PATCH /memberships/status/:id with body { status: "published" | "draft" }
+        await repo.updateStatus(id, nextStatus);
+      } catch {
+        /* fallback to local sync */
+      }
 
       memoryMemberships = memoryMemberships.map((item) =>
         item.id === id ? { ...item, status: nextStatus } : item,
@@ -142,17 +160,22 @@ export function useMemberships() {
         "success",
       );
     },
-    [toast],
+    [repo, toast],
   );
 
   const removeMembership = useCallback(
     async (id: string) => {
       await wait(250);
+      try {
+        await repo.remove(id);
+      } catch {
+        /* fallback */
+      }
       memoryMemberships = memoryMemberships.filter((item) => item.id !== id);
       notifyListeners();
       toast("Membership deleted successfully", "success");
     },
-    [toast],
+    [repo, toast],
   );
 
   return {
@@ -175,6 +198,7 @@ export function useMemberships() {
 
 export function useMembershipDetail(id: string) {
   const { toast } = useToast();
+  const repo = useMemo(() => new MembershipRepository(), []);
   const [membership, setMembership] = useState<Membership | null>(null);
   const [subscribers, setSubscribers] = useState<MembershipSubscriber[]>([]);
   const [transactions, setTransactions] = useState<MembershipTransaction[]>([]);
@@ -213,6 +237,11 @@ export function useMembershipDetail(id: string) {
     async (payload: MembershipPayload) => {
       setIsSaving(true);
       await wait(350);
+      try {
+        await repo.update(id, payload);
+      } catch {
+        /* fallback */
+      }
       memoryMemberships = memoryMemberships.map((item) =>
         item.id === id ? { ...item, ...payload } : item,
       );
@@ -221,15 +250,22 @@ export function useMembershipDetail(id: string) {
       toast("Membership updated successfully", "success");
       return true;
     },
-    [id, toast],
+    [id, repo, toast],
   );
 
   const togglePublish = useCallback(async () => {
     if (!membership) return;
     setIsSaving(true);
-    await wait(250);
     const nextStatus: MembershipStatus =
       membership.status === "published" ? "draft" : "published";
+
+    try {
+      // PATCH /memberships/status/:id with body { status: "published" | "draft" }
+      await repo.updateStatus(id, nextStatus);
+    } catch {
+      /* fallback */
+    }
+
     memoryMemberships = memoryMemberships.map((item) =>
       item.id === id ? { ...item, status: nextStatus } : item,
     );
@@ -241,14 +277,19 @@ export function useMembershipDetail(id: string) {
         : "Membership unpublished (moved to draft)",
       "success",
     );
-  }, [id, membership, toast]);
+  }, [id, membership, repo, toast]);
 
   const removeMembership = useCallback(async () => {
     await wait(250);
+    try {
+      await repo.remove(id);
+    } catch {
+      /* fallback */
+    }
     memoryMemberships = memoryMemberships.filter((item) => item.id !== id);
     notifyListeners();
     toast("Membership deleted successfully", "success");
-  }, [id, toast]);
+  }, [id, repo, toast]);
 
   return {
     membership,

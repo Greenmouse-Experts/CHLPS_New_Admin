@@ -29,6 +29,24 @@ export class ApiUrls {
     return `/programs/${id}`;
   }
 
+  static memberships = "/memberships";
+  static createMembership = "/memberships";
+  static membershipById(id: string) {
+    return `/memberships/${id}`;
+  }
+  static membershipStatus(id: string) {
+    return `/memberships/status/${id}`;
+  }
+
+  static events = "/events";
+  static createEvent = "/events";
+  static eventById(id: string) {
+    return `/events/${id}`;
+  }
+  static eventStatus(id: string) {
+    return `/events/${id}/status`;
+  }
+
   static courses = "/courses";
   static coursesInstructor = "/courses/instructor";
   static createCourse = "/courses/create";
