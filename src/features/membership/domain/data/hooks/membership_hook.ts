@@ -107,7 +107,7 @@ export function useMemberships() {
       }
       const next: Membership = {
         ...payload,
-        id: generateUUID(),
+        // id: generateUUID(),
         membersCount: 0,
         membersThisMonth: 0,
         amountPaid: 0,
@@ -145,20 +145,18 @@ export function useMemberships() {
 
   const togglePublish = useCallback(
     async (id: string) => {
+      console.log("id", id);
       const currentItem = memoryMemberships.find((item) => item.id === id);
       if (!currentItem) return;
-
       setIsSaving(true);
       const nextStatus: MembershipStatus =
         currentItem.status === "published" ? "draft" : "published";
-
       try {
         // PATCH /memberships/status/:id (where id is uuid) with body { status: "published" | "draft" }
         await repo.updateStatus(id, nextStatus);
       } catch {
         /* fallback to local sync */
       }
-
       memoryMemberships = memoryMemberships.map((item) =>
         item.id === id ? { ...item, status: nextStatus } : item,
       );

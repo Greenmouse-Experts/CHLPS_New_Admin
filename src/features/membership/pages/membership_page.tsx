@@ -48,6 +48,11 @@ export default function MembershipPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const columns: columnType<Membership>[] = [
+    // {
+    //   key: "id",
+    //   label: "",
+    //   render: (_, row) => <>{_}</>,
+    // },
     {
       key: "name",
       label: "Membership",
