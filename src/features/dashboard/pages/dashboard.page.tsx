@@ -35,7 +35,10 @@ const DashboardPage = () => {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
-  const chartData = MONTHS.map((name, i) => ({ name, revenue: revenue[i] ?? 0 }));
+  const chartData = MONTHS.map((name, i) => ({
+    name,
+    revenue: revenue[i] ?? 0,
+  }));
 
   return (
     <DashboardLayout title="Dashboard">
@@ -56,7 +59,7 @@ const DashboardPage = () => {
               icon={<Teacher size={20} color="#717171" />}
             />
             <StatCard
-              title="Instructors"
+              title="Events"
               value={analytics.instructors ?? 0}
               loading={isLoading}
               icon={<Profile2User size={20} color="#717171" />}
@@ -72,11 +75,16 @@ const DashboardPage = () => {
 
         <div className="bg-white rounded-xl border border-[#E7E9EB] p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-semibold text-black">This Year Revenue</h2>
+            <h2 className="text-base font-semibold text-black">
+              This Year Revenue
+            </h2>
             <Select
               value={String(year)}
               onChange={(value) => setYear(Number(value))}
-              options={years.map((y) => ({ label: String(y), value: String(y) }))}
+              options={years.map((y) => ({
+                label: String(y),
+                value: String(y),
+              }))}
               className="w-32"
             />
           </div>
@@ -87,7 +95,10 @@ const DashboardPage = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E7E9EB" />
-                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: "#717171" }} />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 12, fill: "#717171" }}
+                  />
                   <YAxis tick={{ fontSize: 12, fill: "#717171" }} />
                   <Tooltip />
                   <Line

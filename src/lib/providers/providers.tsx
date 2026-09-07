@@ -2,6 +2,7 @@
 import { Provider } from "react-redux";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { Toaster } from "sonner";
 import { store } from "../store/store";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
@@ -9,6 +10,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <Provider store={store}>
       {children}
       <ToastContainer position="top-right" theme={"light"} autoClose={3000} />
+      <Toaster position="top-right" richColors />
     </Provider>
   );
 }

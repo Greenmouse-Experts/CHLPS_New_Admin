@@ -1,17 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { DashboardLayout, StatCard } from "@/components";
+import { Button, ConfirmModal, Divider, StatusBadge } from "@/components/ui";
+import CustomTable, { columnType } from "@/components/tables/CustomTable";
+import { Actions } from "@/components/tables/pop-up";
 import {
-  Button,
-  Column,
-  ConfirmModal,
-  DataTable,
-  Divider,
-  StatusBadge,
-  TableAction,
-} from "@/components/ui";
-import { AddCircle, Calendar, People, SearchNormal1, Wallet3 } from "iconsax-react";
+  AddCircle,
+  Calendar,
+  People,
+  SearchNormal1,
+  Wallet3,
+} from "iconsax-react";
 import { useMemberships } from "../domain/data/hooks/membership_hook";
 import {
   Membership,
@@ -24,6 +25,7 @@ import { formatDate } from "@/utils/helper/formate_date";
 import { formatCurrency } from "@/utils/helper/format_num";
 
 export default function MembershipPage() {
+  const router = useRouter();
   const {
     memberships,
     total,
@@ -37,6 +39,7 @@ export default function MembershipPage() {
     handlePageChange,
     createMembership,
     updateMembership,
+    togglePublish,
     removeMembership,
   } = useMemberships();
 
@@ -44,14 +47,12 @@ export default function MembershipPage() {
   const [editing, setEditing] = useState<Membership | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const columns: Column<Membership>[] = [
+  const columns: columnType<Membership>[] = [
     {
       key: "name",
-      title: "Membership",
-      width: 280,
-      className: "min-w-[280px] w-[280px] max-w-[280px] whitespace-normal",
+      label: "Membership",
       render: (_, row) => (
-        <div className="flex items-start gap-3 w-[280px]">
+        <div className="flex items-start gap-3 min-w-[260px] max-w-[320px]">
           {row.image ? (
             <img
               src={row.image}
@@ -59,11 +60,15 @@ export default function MembershipPage() {
               className="w-10 h-10 rounded-lg object-cover border border-[#E7E9EB] shrink-0"
             />
           ) : (
-            <div className="w-10 h-10 rounded-lg bg-[#F7F7F7] shrink-0" />
+            <div className="w-10 h-10 rounded-lg bg-base-200 shrink-0 flex items-center justify-center font-bold text-sm text-base-content/70">
+              {row.name?.[0] || "M"}
+            </div>
           )}
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-black">{row.name}</p>
-            <p className="text-xs text-[#717171] whitespace-normal break-words">
+            <p className="text-sm font-semibold text-base-content leading-tight hover:underline cursor-pointer">
+              {row.name}
+            </p>
+            <p className="text-xs text-base-content/60 line-clamp-2 mt-0.5 whitespace-normal">
               {row.description}
             </p>
           </div>
@@ -72,53 +77,97 @@ export default function MembershipPage() {
     },
     {
       key: "category",
-      title: "Category",
-      className: "whitespace-nowrap",
-      render: (v) => labelOf(MEMBERSHIP_CATEGORIES, v),
+      label: "Category",
+      render: (v) => (
+        <span className="text-sm font-medium text-base-content">
+          {labelOf(MEMBERSHIP_CATEGORIES, v)}
+        </span>
+      ),
     },
     {
       key: "price",
-      title: "Price",
-      className: "whitespace-nowrap",
-      render: (v, row) => formatCurrency(Number(v) || 0, { currency: row.currency }),
+      label: "Price",
+      render: (v, row) => (
+        <span className="text-sm font-semibold text-base-content whitespace-nowrap">
+          {formatCurrency(Number(v) || 0, { currency: row.currency })}
+        </span>
+      ),
     },
     {
       key: "duration",
-      title: "Duration",
-      className: "whitespace-nowrap",
-      render: (v) => labelOf(MEMBERSHIP_DURATIONS, v),
+      label: "Duration",
+      render: (v) => (
+        <span className="text-sm text-base-content/80 whitespace-nowrap">
+          {labelOf(MEMBERSHIP_DURATIONS, v)}
+        </span>
+      ),
     },
     {
       key: "membersCount",
-      title: "Members",
-      className: "whitespace-nowrap",
+      label: "Members",
+      render: (v) => (
+        <span className="text-sm font-medium text-base-content">
+          {Number(v) || 0}
+        </span>
+      ),
     },
     {
       key: "registrationStartDate",
-      title: "Opens",
-      className: "whitespace-nowrap",
-      render: (v) => formatDate(v, "DD MMM YYYY"),
+      label: "Opens",
+      render: (v) => (
+        <span className="text-sm text-base-content/80 whitespace-nowrap">
+          {formatDate(v, "DD MMM YYYY")}
+        </span>
+      ),
     },
     {
       key: "status",
-      title: "Status",
-      className: "whitespace-nowrap",
+      label: "Status",
       render: (v) => <StatusBadge status={v} />,
     },
   ];
 
-  const actions: TableAction<Membership>[] = [
+  const actions: Actions<Membership>[] = [
     {
+      key: "view_details",
+      label: "View Details",
+      action: (row, r) => {
+        r.push(`/membership/${row.id}`);
+      },
+    },
+    {
+      key: "toggle_publish",
+      label: "Publish / Un-publish",
+      render: (row) => (
+        <span
+          className={
+            row.status === "published"
+              ? "text-amber-600 font-medium"
+              : "text-emerald-600 font-medium"
+          }
+        >
+          {row.status === "published" ? "Unpublish" : "Publish"}
+        </span>
+      ),
+      action: (row) => {
+        togglePublish(row.id);
+      },
+    },
+    {
+      key: "edit",
       label: "Edit",
-      onClick: (row) => {
+      action: (row) => {
         setEditing(row);
         setModalOpen(true);
       },
     },
     {
+      key: "delete",
       label: "Delete",
-      variant: "danger",
-      onClick: (row) => setDeleteId(row.id),
+      render: () => <span className="text-error font-medium">Delete</span>,
+      action: (row) => {
+        setDeleteId(row.id);
+      },
     },
   ];
 
@@ -140,21 +189,24 @@ export default function MembershipPage() {
           />
           <StatCard
             title="Amount Paid"
-            value={formatCurrency(stats.amountPaid, { currency: "NGN", decimals: 0 })}
+            value={formatCurrency(stats.amountPaid, {
+              currency: "NGN",
+              decimals: 0,
+            })}
             loading={isLoading}
             icon={<Wallet3 size={20} color="#717171" />}
           />
         </div>
 
-        <div className="space-y-3 bg-white rounded-md border border-[#F0F0F0] pt-4 pb-2">
-          <div className="flex flex-wrap items-center justify-between px-4 gap-3">
-            <div className="flex items-center gap-2 border border-[#E7E9EB] rounded-lg px-3 h-9 bg-white w-52">
-              <SearchNormal1 size={13} color="#717171" />
+        <div className="space-y-3 bg-white rounded-xl border border-[#E7E9EB] p-4 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 border border-[#E7E9EB] rounded-lg px-3 h-9 bg-white w-64 focus-within:border-primary transition-colors">
+              <SearchNormal1 size={15} color="#717171" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => handleSearch(e.target.value)}
-                placeholder="Search memberships"
+                placeholder="Search memberships..."
                 className="flex-1 text-xs outline-none focus:outline-none focus-visible:outline-none ring-0 bg-transparent placeholder-[#ADADAD]"
               />
             </div>
@@ -168,21 +220,20 @@ export default function MembershipPage() {
               Create membership
             </Button>
           </div>
+
           <Divider />
-          <DataTable
-            className="border-none rounded-none"
+
+          <CustomTable
+            ring={false}
             columns={columns}
             data={memberships}
-            keyField="id"
-            loading={isLoading}
             actions={actions}
-            title="Memberships"
-            emptyText="No memberships found"
-            pagination={{
+            totalCount={total}
+            onRowClick={(item) => router.push(`/membership/${item.id}`)}
+            paginationProps={{
               page,
               pageSize,
-              total,
-              onChange: handlePageChange,
+              setPagination: handlePageChange,
             }}
           />
         </div>
@@ -207,7 +258,7 @@ export default function MembershipPage() {
         open={!!deleteId}
         onClose={() => setDeleteId(null)}
         title="Delete membership"
-        description="This will remove the membership plan from the list."
+        description="This will permanently remove the membership plan from the list."
         confirmLabel="Delete"
         variant="danger"
         onConfirm={async () => {
