@@ -16,6 +16,17 @@ function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function generateUUID(): string {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 // Global in-memory cache to sync state across views during session
 let memoryMemberships: Membership[] = [...SEED_MEMBERSHIPS];
 let memorySubscribers: MembershipSubscriber[] = [...SEED_SUBSCRIBERS];
@@ -96,7 +107,7 @@ export function useMemberships() {
       }
       const next: Membership = {
         ...payload,
-        id: `mbr-${Date.now()}`,
+        id: generateUUID(),
         membersCount: 0,
         membersThisMonth: 0,
         amountPaid: 0,
@@ -142,7 +153,7 @@ export function useMemberships() {
         currentItem.status === "published" ? "draft" : "published";
 
       try {
-        // PATCH /memberships/status/:id with body { status: "published" | "draft" }
+        // PATCH /memberships/status/:id (where id is uuid) with body { status: "published" | "draft" }
         await repo.updateStatus(id, nextStatus);
       } catch {
         /* fallback to local sync */
@@ -260,7 +271,7 @@ export function useMembershipDetail(id: string) {
       membership.status === "published" ? "draft" : "published";
 
     try {
-      // PATCH /memberships/status/:id with body { status: "published" | "draft" }
+      // PATCH /memberships/status/:id (where id is uuid) with body { status: "published" | "draft" }
       await repo.updateStatus(id, nextStatus);
     } catch {
       /* fallback */
