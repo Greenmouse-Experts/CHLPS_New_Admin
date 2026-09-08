@@ -10,6 +10,7 @@ import {
   Checkbox,
   FieldLabel,
   FieldError,
+  DatePicker,
 } from "@/components/ui";
 import {
   Membership,
@@ -36,24 +37,32 @@ interface Props {
   onSubmit: (payload: MembershipPayload) => Promise<boolean>;
 }
 
-const EMPTY: MembershipPayload = {
-  name: "",
-  description: "",
-  category: "student",
-  eligibilityCriteria: [""],
-  price: 0,
-  currency: "NGN",
-  duration: "1_year",
-  autoRenewal: false,
-  renewalPrice: null,
-  renewalPeriod: null,
-  benefits: [""],
-  requiredDocuments: [],
-  registrationStartDate: "",
-  registrationEndDate: null,
-  status: "draft",
-  image: null,
-};
+function todayIso(): string {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
+function getEmpty(): MembershipPayload {
+  return {
+    name: "",
+    description: "",
+    category: "student",
+    eligibilityCriteria: [""],
+    price: 0,
+    currency: "NGN",
+    duration: "1_year",
+    autoRenewal: false,
+    renewalPrice: null,
+    renewalPeriod: null,
+    benefits: [""],
+    requiredDocuments: [],
+    registrationStartDate: todayIso(),
+    registrationEndDate: null,
+    status: "draft",
+    image: null,
+  };
+}
 
 function toPayload(item: Membership): MembershipPayload {
   return {
@@ -183,7 +192,7 @@ export function MembershipModal({
   onClose,
   onSubmit,
 }: Props) {
-  const [form, setForm] = useState<MembershipPayload>(EMPTY);
+  const [form, setForm] = useState<MembershipPayload>(getEmpty);
   const [error, setError] = useState("");
   const isEdit = !!membership;
   const isLifetime = form.duration === "lifetime";
@@ -192,7 +201,7 @@ export function MembershipModal({
   useEffect(() => {
     if (!open) return;
     setError("");
-    setForm(membership ? toPayload(membership) : EMPTY);
+    setForm(membership ? toPayload(membership) : getEmpty());
   }, [open, membership]);
 
   function set<K extends keyof MembershipPayload>(
@@ -437,20 +446,19 @@ export function MembershipModal({
           </div>
         </div>
 
-        <TextField
+        <DatePicker
           label="Registration start date"
-          type="date"
           required
           hint="When membership registration opens"
           value={form.registrationStartDate}
-          onChange={(e) => set("registrationStartDate", e.target.value)}
+          onChange={(iso) => set("registrationStartDate", iso)}
         />
-        <TextField
+        <DatePicker
           label="Registration end date"
-          type="date"
           hint="When membership expires (optional)"
-          value={form.registrationEndDate ?? ""}
-          onChange={(e) => set("registrationEndDate", e.target.value || null)}
+          value={form.registrationEndDate}
+          min={form.registrationStartDate || null}
+          onChange={(iso) => set("registrationEndDate", iso)}
         />
 
         <div className="sm:col-span-2">
