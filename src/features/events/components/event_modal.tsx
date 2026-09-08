@@ -1,26 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useForm, FormProvider, Controller } from "react-hook-form";
 import {
   Modal,
   Button,
-  TextField,
-  Select,
   Toggle,
   PhoneField,
   FieldLabel,
   FieldError,
   DatePicker,
 } from "@/components/ui";
+import SimpleInput from "@/components/inputs/SimpleInput";
+import SimpleTextArea from "@/components/inputs/SimpleTextArea";
+import LocalSelect from "@/components/inputs/LocalSelect";
+import SimpleSelect from "@/components/inputs/SimpleSelect";
+import { ApiUrls } from "@/lib/network/api_url";
 import {
   EventItem,
   EventPayload,
-  EventCategory,
   EventFormat,
   EventEligibility,
   EventCurrency,
   EventStatus,
-  EVENT_CATEGORIES,
   EVENT_FORMATS,
   EVENT_ELIGIBILITY,
   EVENT_CURRENCIES,
@@ -35,55 +37,93 @@ interface Props {
   onSubmit: (payload: EventPayload) => Promise<boolean>;
 }
 
-const EMPTY: EventPayload = {
-  name: "",
-  description: "",
-  category: "conference",
-  image: null,
-  startDate: "",
-  startTime: "",
-  endDate: "",
-  endTime: "",
-  format: "physical",
-  meetingLink: null,
-  location: null,
-  registrationRequired: true,
-  registrationOpens: null,
-  registrationCloses: null,
-  maxAttendees: null,
-  eligibility: "everyone",
-  price: 0,
-  currency: "NGN",
-  organizerName: "",
-  contactEmail: "",
-  contactPhone: null,
-  status: "draft",
-};
+interface FormValues {
+  name: string;
+  description: string;
+  categoryId?: string;
+  category?: string;
+  startDate: string;
+  startTime: string;
+  endDate: string;
+  endTime: string;
+  format: EventFormat;
+  meetingLink?: string | null;
+  location?: string | null;
+  registrationRequired: boolean;
+  registrationOpens?: string | null;
+  registrationCloses?: string | null;
+  maxAttendees?: number | string | null;
+  eligibility: EventEligibility;
+  price: number | string;
+  currency: EventCurrency;
+  organizerName: string;
+  contactEmail: string;
+  contactPhone?: string | null;
+  status: EventStatus;
+  image?: string | null;
+}
 
-function toPayload(item: EventItem): EventPayload {
+function normalizeFormat(val?: string | null): EventFormat {
+  const lower = (val || "").toLowerCase();
+  if (lower === "virtual") return "Virtual";
+  if (lower === "hybrid") return "Hybrid";
+  return "Physical";
+}
+
+function normalizeEligibility(val?: string | null): EventEligibility {
+  const lower = (val || "").toLowerCase();
+  if (lower.includes("member")) return "Members Only";
+  if (lower.includes("specific")) return "Specific Membership Type";
+  if (lower.includes("invitation")) return "Invitation Only";
+  return "Everyone";
+}
+
+function normalizeStatus(val?: string | null): EventStatus {
+  const lower = (val || "").toLowerCase();
+  if (lower === "published") return "Published";
+  if (lower === "cancelled") return "Cancelled";
+  if (lower === "completed") return "Completed";
+  return "Draft";
+}
+
+function getFormDefaults(item?: EventItem | null): FormValues {
+  const catId =
+    item?.categoryId ||
+    (typeof item?.category === "object" && item.category !== null
+      ? (item.category as any).id
+      : typeof item?.category === "string"
+        ? item.category
+        : "");
+
   return {
-    name: item.name,
-    description: item.description,
-    category: item.category,
-    image: item.image,
-    startDate: item.startDate,
-    startTime: item.startTime,
-    endDate: item.endDate,
-    endTime: item.endTime,
-    format: item.format,
-    meetingLink: item.meetingLink,
-    location: item.location,
-    registrationRequired: item.registrationRequired,
-    registrationOpens: item.registrationOpens,
-    registrationCloses: item.registrationCloses,
-    maxAttendees: item.maxAttendees,
-    eligibility: item.eligibility,
-    price: item.price,
-    currency: item.currency,
-    organizerName: item.organizerName,
-    contactEmail: item.contactEmail,
-    contactPhone: item.contactPhone,
-    status: item.status,
+    name: item?.name ?? "",
+    description: item?.description ?? "",
+    categoryId: catId,
+    category: typeof item?.category === "string" ? item.category : "",
+    startDate: item?.startDate ?? "",
+    startTime: item?.startTime ?? "",
+    endDate: item?.endDate ?? "",
+    endTime: item?.endTime ?? "",
+    format: normalizeFormat(item?.format),
+    meetingLink: item?.meetingLink ?? "",
+    location: item?.location ?? "",
+    registrationRequired: item?.registrationRequired ?? true,
+    registrationOpens: item?.registrationOpens ?? null,
+    registrationCloses: item?.registrationCloses ?? null,
+    maxAttendees:
+      item?.maxAttendees != null
+        ? item.maxAttendees
+        : item?.maximumAttendees != null
+          ? item.maximumAttendees
+          : "",
+    eligibility: normalizeEligibility(item?.eligibility),
+    price: item?.price != null ? item.price : 0,
+    currency: item?.currency ?? "CAD",
+    organizerName: item?.organizerName ?? "",
+    contactEmail: item?.contactEmail ?? "",
+    contactPhone: item?.contactPhone ?? "",
+    status: normalizeStatus(item?.status),
+    image: item?.image ?? null,
   };
 }
 
@@ -95,7 +135,7 @@ function LocalImageField({
   onChange: (url: string | null) => void;
 }) {
   return (
-    <div>
+    <div className="space-y-2">
       <FieldLabel>Event image</FieldLabel>
       {value ? (
         <div className="flex items-center gap-3 mb-2">
@@ -132,10 +172,6 @@ function LocalImageField({
   );
 }
 
-function isValidEmail(value: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-}
-
 function isValidUrl(value: string) {
   try {
     const url = new URL(value);
@@ -152,86 +188,152 @@ export function EventModal({
   onClose,
   onSubmit,
 }: Props) {
-  const [form, setForm] = useState<EventPayload>(EMPTY);
-  const [error, setError] = useState("");
   const isEdit = !!event;
-  const needsLink = form.format === "virtual" || form.format === "hybrid";
-  const needsLocation = form.format === "physical" || form.format === "hybrid";
+
+  const methods = useForm<FormValues>({
+    defaultValues: getFormDefaults(event),
+    mode: "onBlur",
+  });
+
+  const {
+    register,
+    control,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    setError,
+    clearErrors,
+    formState: { errors },
+  } = methods;
+
+  const currentFormat = watch("format");
+  const registrationRequired = watch("registrationRequired");
+  const watchStartDate = watch("startDate");
+  const watchRegistrationOpens = watch("registrationOpens");
+  const watchRegistrationCloses = watch("registrationCloses");
+  const watchImage = watch("image");
+
+  const fmtLower = (currentFormat || "").toLowerCase();
+  const needsLink = fmtLower === "virtual" || fmtLower === "hybrid";
+  const needsLocation = fmtLower === "physical" || fmtLower === "hybrid";
 
   useEffect(() => {
-    if (!open) return;
-    setError("");
-    setForm(event ? toPayload(event) : EMPTY);
-  }, [open, event]);
+    if (open) {
+      reset(getFormDefaults(event));
+    }
+  }, [open, event, reset]);
 
-  function set<K extends keyof EventPayload>(key: K, value: EventPayload[K]) {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  }
+  const onFormSubmit = async (data: FormValues) => {
+    // Validate datetime sequence
+    const start = new Date(`${data.startDate}T${data.startTime}`);
+    const end = new Date(`${data.endDate}T${data.endTime}`);
+    if (end < start) {
+      setError("endDate", {
+        type: "manual",
+        message: "End date and time must be after the start date and time",
+      });
+      return;
+    }
 
-  async function handleSubmit() {
-    if (!form.name.trim()) return setError("Event name is required");
-    if (!form.description.trim())
-      return setError("Event description is required");
-    if (!form.startDate) return setError("Start date is required");
-    if (!form.startTime) return setError("Start time is required");
-    if (!form.endDate) return setError("End date is required");
-    if (!form.endTime) return setError("End time is required");
+    if (needsLink) {
+      const link = (data.meetingLink || "").trim();
+      if (!link) {
+        setError("meetingLink", {
+          type: "manual",
+          message: "Meeting link is required for virtual and hybrid events",
+        });
+        return;
+      }
+      if (!isValidUrl(link)) {
+        setError("meetingLink", {
+          type: "manual",
+          message: "Enter a valid meeting URL (e.g. https://...)",
+        });
+        return;
+      }
+    }
 
-    const start = new Date(`${form.startDate}T${form.startTime}`);
-    const end = new Date(`${form.endDate}T${form.endTime}`);
-    if (end < start)
-      return setError("End date and time must be after the start");
+    if (needsLocation && !(data.location || "").trim()) {
+      setError("location", {
+        type: "manual",
+        message: "Location is required for physical and hybrid events",
+      });
+      return;
+    }
 
-    if (needsLink && !form.meetingLink?.trim()) {
-      return setError("Meeting link is required for virtual and hybrid events");
+    if (registrationRequired) {
+      if (!data.registrationOpens) {
+        setError("registrationOpens", {
+          type: "manual",
+          message: "Registration opening date is required",
+        });
+        return;
+      }
+      if (!data.registrationCloses) {
+        setError("registrationCloses", {
+          type: "manual",
+          message: "Registration closing date is required",
+        });
+        return;
+      }
+      if (data.registrationCloses < data.registrationOpens) {
+        setError("registrationCloses", {
+          type: "manual",
+          message: "Registration must close after it opens",
+        });
+        return;
+      }
     }
-    if (form.meetingLink?.trim() && !isValidUrl(form.meetingLink.trim())) {
-      return setError("Enter a valid meeting URL");
-    }
-    if (needsLocation && !form.location?.trim()) {
-      return setError("Location is required for physical and hybrid events");
-    }
-    if (form.registrationRequired && !form.registrationOpens) {
-      return setError("Registration opening date is required");
-    }
-    if (form.registrationRequired && !form.registrationCloses) {
-      return setError("Registration closing date is required");
-    }
-    if (
-      form.registrationOpens &&
-      form.registrationCloses &&
-      form.registrationCloses < form.registrationOpens
-    ) {
-      return setError("Registration must close after it opens");
-    }
-    if (form.price < 0) return setError("Event price cannot be negative");
-    if (!form.organizerName.trim())
-      return setError("Organizer name is required");
-    if (!form.contactEmail.trim()) return setError("Contact email is required");
-    if (!isValidEmail(form.contactEmail.trim()))
-      return setError("Enter a valid contact email");
 
-    const ok = await onSubmit({
-      ...form,
-      name: form.name.trim(),
-      description: form.description.trim(),
-      meetingLink: needsLink ? form.meetingLink?.trim() || null : null,
-      location: needsLocation ? form.location?.trim() || null : null,
-      registrationOpens: form.registrationRequired
-        ? form.registrationOpens
+    const priceNum = Number(data.price);
+    if (isNaN(priceNum) || priceNum < 0) {
+      setError("price", {
+        type: "manual",
+        message: "Event price cannot be negative",
+      });
+      return;
+    }
+
+    const attendeesNum =
+      data.maxAttendees !== "" && data.maxAttendees != null
+        ? Number(data.maxAttendees)
+        : null;
+
+    const payload: EventPayload = {
+      name: data.name.trim(),
+      description: data.description.trim(),
+      category: data.categoryId || data.category || "conference",
+      categoryId: data.categoryId || undefined,
+      startDate: data.startDate,
+      startTime: data.startTime,
+      endDate: data.endDate,
+      endTime: data.endTime,
+      format: data.format,
+      meetingLink: needsLink ? data.meetingLink?.trim() || null : null,
+      location: needsLocation ? data.location?.trim() || null : null,
+      registrationRequired: Boolean(data.registrationRequired),
+      registrationOpens: data.registrationRequired
+        ? data.registrationOpens || null
         : null,
-      registrationCloses: form.registrationRequired
-        ? form.registrationCloses
+      registrationCloses: data.registrationRequired
+        ? data.registrationCloses || null
         : null,
-      maxAttendees:
-        form.maxAttendees && form.maxAttendees > 0 ? form.maxAttendees : null,
-      organizerName: form.organizerName.trim(),
-      contactEmail: form.contactEmail.trim(),
-      contactPhone: form.contactPhone?.trim() || null,
-      image: form.image || null,
-    });
+      maxAttendees: attendeesNum,
+      maximumAttendees: attendeesNum,
+      eligibility: data.eligibility,
+      price: priceNum,
+      currency: data.currency,
+      organizerName: data.organizerName.trim(),
+      contactEmail: data.contactEmail.trim(),
+      contactPhone: data.contactPhone?.trim() || null,
+      status: data.status,
+      image: data.image || null,
+    };
+
+    const ok = await onSubmit(payload);
     if (ok) onClose();
-  }
+  };
 
   return (
     <Modal
@@ -241,234 +343,330 @@ export function EventModal({
       size="full"
       scrollable
     >
-      <div className="grid sm:grid-cols-2 gap-4">
-        <div className="sm:col-span-2">
-          <TextField
-            label="Event name"
-            required
-            placeholder="Name of the event"
-            value={form.name}
-            onChange={(e) => set("name", e.target.value)}
-          />
-        </div>
+      <FormProvider {...methods}>
+        <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="sm:col-span-2">
+              <SimpleInput
+                label="Event name"
+                required
+                placeholder="Name of the event"
+                {...register("name", {
+                  required: "Event name is required",
+                })}
+              />
+            </div>
 
-        <div className="sm:col-span-2">
-          <FieldLabel required>Event description</FieldLabel>
-          <textarea
-            className="flipex-input-base min-h-24"
-            placeholder="Details about the event"
-            value={form.description}
-            onChange={(e) => set("description", e.target.value)}
-          />
-        </div>
+            <div className="sm:col-span-2">
+              <SimpleTextArea
+                label="Event description"
+                required
+                placeholder="Details about the event"
+                rows={3}
+                {...register("description", {
+                  required: "Event description is required",
+                })}
+              />
+            </div>
 
-        <Select
-          label="Event category"
-          required
-          value={form.category}
-          onChange={(v) => set("category", v as EventCategory)}
-          options={EVENT_CATEGORIES.map((o) => ({
-            label: o.label,
-            value: o.value,
-          }))}
-        />
-        <Select
-          label="Event status"
-          required
-          value={form.status}
-          onChange={(v) => set("status", v as EventStatus)}
-          options={EVENT_STATUSES.map((o) => ({
-            label: o.label,
-            value: o.value,
-          }))}
-        />
+            <div>
+              <SimpleSelect<{ id: string; name: string }>
+                route={ApiUrls.eventCategories}
+                name="categoryId"
+                label="Event category"
+                placeholder="Select category"
+                autoSelectFirst={true}
+                onChange={(val) => {
+                  if (val) clearErrors("categoryId");
+                }}
+                render={(item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                )}
+              />
+            </div>
 
-        <div className="sm:col-span-2">
-          <LocalImageField
-            value={form.image}
-            onChange={(image) => set("image", image)}
-          />
-        </div>
+            <div>
+              <LocalSelect label="Event status" {...register("status")}>
+                {EVENT_STATUSES.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </LocalSelect>
+            </div>
 
-        <DatePicker
-          label="Start date"
-          required
-          value={form.startDate}
-          onChange={(iso) => set("startDate", iso)}
-        />
-        <TextField
-          label="Start time"
-          type="time"
-          required
-          value={form.startTime}
-          onChange={(e) => set("startTime", e.target.value)}
-        />
-        <DatePicker
-          label="End date"
-          required
-          value={form.endDate}
-          min={form.startDate || null}
-          onChange={(iso) => set("endDate", iso)}
-        />
-        <TextField
-          label="End time"
-          type="time"
-          required
-          value={form.endTime}
-          onChange={(e) => set("endTime", e.target.value)}
-        />
+            <div className="sm:col-span-2">
+              <LocalImageField
+                value={watchImage || null}
+                onChange={(img) =>
+                  setValue("image", img, { shouldDirty: true })
+                }
+              />
+            </div>
 
-        <Select
-          label="Event format"
-          required
-          value={form.format}
-          onChange={(v) => {
-            const format = v as EventFormat;
-            setForm((prev) => ({
-              ...prev,
-              format,
-              meetingLink: format === "physical" ? null : prev.meetingLink,
-              location: format === "virtual" ? null : prev.location,
-            }));
-          }}
-          options={EVENT_FORMATS.map((o) => ({
-            label: o.label,
-            value: o.value,
-          }))}
-        />
-        <Select
-          label="Eligibility"
-          required
-          value={form.eligibility}
-          onChange={(v) => set("eligibility", v as EventEligibility)}
-          options={EVENT_ELIGIBILITY.map((o) => ({
-            label: o.label,
-            value: o.value,
-          }))}
-        />
+            <div>
+              <Controller
+                control={control}
+                name="startDate"
+                rules={{ required: "Start date is required" }}
+                render={({ field }) => (
+                  <DatePicker
+                    label="Start date"
+                    required
+                    value={field.value}
+                    onChange={field.onChange}
+                  />
+                )}
+              />
+              {errors.startDate && (
+                <FieldError>{String(errors.startDate.message)}</FieldError>
+              )}
+            </div>
 
-        {needsLink && (
-          <div className="sm:col-span-2">
-            <TextField
-              label="Meeting link"
-              type="url"
-              required
-              placeholder="https://"
-              value={form.meetingLink ?? ""}
-              onChange={(e) => set("meetingLink", e.target.value)}
-            />
+            <div>
+              <SimpleInput
+                label="Start time"
+                type="time"
+                required
+                {...register("startTime", {
+                  required: "Start time is required",
+                })}
+              />
+            </div>
+
+            <div>
+              <Controller
+                control={control}
+                name="endDate"
+                rules={{ required: "End date is required" }}
+                render={({ field }) => (
+                  <DatePicker
+                    label="End date"
+                    required
+                    value={field.value}
+                    min={watchStartDate || null}
+                    onChange={field.onChange}
+                  />
+                )}
+              />
+              {errors.endDate && (
+                <FieldError>{String(errors.endDate.message)}</FieldError>
+              )}
+            </div>
+
+            <div>
+              <SimpleInput
+                label="End time"
+                type="time"
+                required
+                {...register("endTime", {
+                  required: "End time is required",
+                })}
+              />
+            </div>
+
+            <div>
+              <LocalSelect
+                label="Event format"
+                {...register("format", {
+                  onChange: (e) => {
+                    const selected = (e.target.value || "").toLowerCase();
+                    if (selected === "physical") setValue("meetingLink", "");
+                    if (selected === "virtual") setValue("location", "");
+                  },
+                })}
+              >
+                {EVENT_FORMATS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </LocalSelect>
+            </div>
+
+            <div>
+              <LocalSelect label="Eligibility" {...register("eligibility")}>
+                {EVENT_ELIGIBILITY.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </LocalSelect>
+            </div>
+
+            {needsLink && (
+              <div className="sm:col-span-2">
+                <SimpleInput
+                  label="Meeting link"
+                  type="url"
+                  required
+                  placeholder="https://meet.example.com/..."
+                  {...register("meetingLink")}
+                />
+              </div>
+            )}
+
+            {needsLocation && (
+              <div className="sm:col-span-2">
+                <SimpleInput
+                  label="Location"
+                  required
+                  placeholder="Venue / address"
+                  {...register("location")}
+                />
+              </div>
+            )}
+
+            <div className="flex items-center pt-6">
+              <Toggle
+                checked={registrationRequired}
+                onChange={(checked) => {
+                  setValue("registrationRequired", checked, {
+                    shouldDirty: true,
+                  });
+                  if (!checked) {
+                    setValue("registrationOpens", null);
+                    setValue("registrationCloses", null);
+                  }
+                }}
+                label="Registration required"
+                hint={registrationRequired ? "Yes" : "No"}
+              />
+            </div>
+
+            <div>
+              <SimpleInput
+                label="Maximum attendees"
+                type="number"
+                min={0}
+                placeholder="Optional"
+                {...register("maxAttendees")}
+              />
+            </div>
+
+            {registrationRequired && (
+              <>
+                <div>
+                  <Controller
+                    control={control}
+                    name="registrationOpens"
+                    render={({ field }) => (
+                      <DatePicker
+                        label="Registration opens"
+                        required
+                        value={field.value}
+                        max={watchRegistrationCloses || null}
+                        onChange={field.onChange}
+                      />
+                    )}
+                  />
+                  {errors.registrationOpens && (
+                    <FieldError>
+                      {String(errors.registrationOpens.message)}
+                    </FieldError>
+                  )}
+                </div>
+
+                <div>
+                  <Controller
+                    control={control}
+                    name="registrationCloses"
+                    render={({ field }) => (
+                      <DatePicker
+                        label="Registration closes"
+                        required
+                        value={field.value}
+                        min={watchRegistrationOpens || null}
+                        onChange={field.onChange}
+                      />
+                    )}
+                  />
+                  {errors.registrationCloses && (
+                    <FieldError>
+                      {String(errors.registrationCloses.message)}
+                    </FieldError>
+                  )}
+                </div>
+              </>
+            )}
+
+            <div>
+              <SimpleInput
+                label="Event price"
+                type="number"
+                min={0}
+                required
+                placeholder="Enter 0 for a free event"
+                {...register("price", {
+                  required: "Event price is required",
+                })}
+              />
+            </div>
+
+            <div>
+              <LocalSelect label="Currency" {...register("currency")}>
+                {EVENT_CURRENCIES.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </LocalSelect>
+            </div>
+
+            <div>
+              <SimpleInput
+                label="Organizer name"
+                required
+                placeholder="e.g. CHLPS Institute"
+                {...register("organizerName", {
+                  required: "Organizer name is required",
+                })}
+              />
+            </div>
+
+            <div>
+              <SimpleInput
+                label="Contact email"
+                type="email"
+                required
+                placeholder="contact@chlps.ca"
+                {...register("contactEmail", {
+                  required: "Contact email is required",
+                  pattern: {
+                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                    message: "Enter a valid contact email address",
+                  },
+                })}
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <Controller
+                control={control}
+                name="contactPhone"
+                render={({ field }) => (
+                  <PhoneField
+                    label="Contact phone"
+                    value={field.value ?? ""}
+                    onChange={field.onChange}
+                  />
+                )}
+              />
+            </div>
           </div>
-        )}
 
-        {needsLocation && (
-          <div className="sm:col-span-2">
-            <TextField
-              label="Location"
-              required
-              placeholder="Venue / address"
-              value={form.location ?? ""}
-              onChange={(e) => set("location", e.target.value)}
-            />
+          <div className="flex justify-end gap-2 mt-6">
+            <Button variant="ghost" type="button" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button loading={isSubmitting} type="submit">
+              {isEdit ? "Save changes" : "Create event"}
+            </Button>
           </div>
-        )}
-
-        <div className="flex items-center">
-          <Toggle
-            checked={form.registrationRequired}
-            onChange={(checked) =>
-              setForm((prev) => ({
-                ...prev,
-                registrationRequired: checked,
-                registrationOpens: checked ? prev.registrationOpens : null,
-                registrationCloses: checked ? prev.registrationCloses : null,
-              }))
-            }
-            label="Registration required"
-            hint={form.registrationRequired ? "Yes" : "No"}
-          />
-        </div>
-        <TextField
-          label="Maximum attendees"
-          type="number"
-          min={0}
-          placeholder="Optional"
-          value={form.maxAttendees != null ? String(form.maxAttendees) : ""}
-          onChange={(e) =>
-            set("maxAttendees", e.target.value ? Number(e.target.value) : null)
-          }
-        />
-
-        {form.registrationRequired && (
-          <>
-            <DatePicker
-              label="Registration opens"
-              required
-              value={form.registrationOpens}
-              max={form.registrationCloses || null}
-              onChange={(iso) => set("registrationOpens", iso)}
-            />
-            <DatePicker
-              label="Registration closes"
-              required
-              value={form.registrationCloses}
-              min={form.registrationOpens || null}
-              onChange={(iso) => set("registrationCloses", iso)}
-            />
-          </>
-        )}
-
-        <TextField
-          label="Event price"
-          type="number"
-          min={0}
-          required
-          hint="Enter 0 for a free event"
-          value={String(form.price)}
-          onChange={(e) => set("price", Number(e.target.value) || 0)}
-        />
-        <Select
-          label="Currency"
-          required
-          value={form.currency}
-          onChange={(v) => set("currency", v as EventCurrency)}
-          options={EVENT_CURRENCIES.map((o) => ({
-            label: o.label,
-            value: o.value,
-          }))}
-        />
-
-        <TextField
-          label="Organizer name"
-          required
-          value={form.organizerName}
-          onChange={(e) => set("organizerName", e.target.value)}
-        />
-        <TextField
-          label="Contact email"
-          type="email"
-          required
-          value={form.contactEmail}
-          onChange={(e) => set("contactEmail", e.target.value)}
-        />
-        <div className="sm:col-span-2">
-          <PhoneField
-            label="Contact phone"
-            value={form.contactPhone ?? ""}
-            onChange={(contactPhone) => set("contactPhone", contactPhone)}
-          />
-        </div>
-      </div>
-
-      {error && <FieldError>{error}</FieldError>}
-
-      <div className="flex justify-end gap-2 mt-6">
-        <Button variant="ghost" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button loading={isSubmitting} onClick={handleSubmit}>
-          {isEdit ? "Save changes" : "Create event"}
-        </Button>
-      </div>
+        </form>
+      </FormProvider>
     </Modal>
   );
 }

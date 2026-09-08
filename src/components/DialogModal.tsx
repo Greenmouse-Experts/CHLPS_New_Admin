@@ -6,7 +6,6 @@ import {
   useState,
   type PropsWithChildren,
 } from "react";
-import { Toaster } from "sonner";
 import { X } from "lucide-react";
 
 interface ModalProps extends PropsWithChildren {
@@ -48,10 +47,11 @@ const Modal = forwardRef<ModalHandle, ModalProps>(
 
     return (
       <dialog ref={modalRef} className="modal modal-middle sm:modal-middle">
-        <Toaster theme="dark" richColors />
         <div className="modal-box bg-base-100 text-base-content border border-base-300 max-w-2xl flex flex-col max-h-[90vh] rounded-2xl shadow-xl relative p-0 overflow-hidden">
           <div className="flex border-b border-base-200 py-4 items-center px-6 bg-base-100">
-            {title && <h3 className="font-bold text-lg text-base-content">{title}</h3>}
+            {title && (
+              <h3 className="font-bold text-lg text-base-content">{title}</h3>
+            )}
             <form method="dialog" className="ml-auto">
               <button
                 type="button"
@@ -62,7 +62,9 @@ const Modal = forwardRef<ModalHandle, ModalProps>(
               </button>
             </form>
           </div>
-          {isOpen && children && <div className="p-6 overflow-y-auto">{children}</div>}
+          {isOpen && children && (
+            <div className="p-6 overflow-y-auto">{children}</div>
+          )}
           {actions && (
             <div className="flex justify-end gap-2 sticky bottom-0 p-4 bg-base-100 border-t border-base-200">
               {actions}

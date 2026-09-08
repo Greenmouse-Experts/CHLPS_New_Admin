@@ -10,17 +10,17 @@ export type EventCategory =
   | "social"
   | "other";
 
-export type EventFormat = "physical" | "virtual" | "hybrid";
+export type EventFormat = "Physical" | "Virtual" | "Hybrid";
 
 export type EventEligibility =
-  | "everyone"
-  | "members_only"
-  | "specific_membership"
-  | "invitation_only";
+  | "Everyone"
+  | "Members Only"
+  | "Specific Membership Type"
+  | "Invitation Only";
 
-export type EventCurrency = "NGN" | "USD" | "GBP" | "EUR";
+export type EventCurrency = "CAD" | "NGN" | "USD" | "GBP" | "EUR";
 
-export type EventStatus = "draft" | "published" | "cancelled" | "completed";
+export type EventStatus = "Draft" | "Published" | "Cancelled" | "Completed";
 
 export interface EventItem {
   id: string;
@@ -87,19 +87,20 @@ export const EVENT_CATEGORIES: { value: EventCategory; label: string }[] = [
 ];
 
 export const EVENT_FORMATS: { value: EventFormat; label: string }[] = [
-  { value: "physical", label: "Physical" },
-  { value: "virtual", label: "Virtual" },
-  { value: "hybrid", label: "Hybrid" },
+  { value: "Physical", label: "Physical" },
+  { value: "Virtual", label: "Virtual" },
+  { value: "Hybrid", label: "Hybrid" },
 ];
 
 export const EVENT_ELIGIBILITY: { value: EventEligibility; label: string }[] = [
-  { value: "everyone", label: "Everyone" },
-  { value: "members_only", label: "Members Only" },
-  { value: "specific_membership", label: "Specific Membership Type" },
-  { value: "invitation_only", label: "Invitation Only" },
+  { value: "Everyone", label: "Everyone" },
+  { value: "Members Only", label: "Members Only" },
+  { value: "Specific Membership Type", label: "Specific Membership Type" },
+  { value: "Invitation Only", label: "Invitation Only" },
 ];
 
 export const EVENT_CURRENCIES: { value: EventCurrency; label: string }[] = [
+  { value: "CAD", label: "CAD" },
   { value: "NGN", label: "NGN" },
   { value: "USD", label: "USD" },
   { value: "GBP", label: "GBP" },
@@ -107,15 +108,15 @@ export const EVENT_CURRENCIES: { value: EventCurrency; label: string }[] = [
 ];
 
 export const EVENT_STATUSES: { value: EventStatus; label: string }[] = [
-  { value: "draft", label: "Draft" },
-  { value: "published", label: "Published" },
-  { value: "cancelled", label: "Cancelled" },
-  { value: "completed", label: "Completed" },
+  { value: "Draft", label: "Draft" },
+  { value: "Published", label: "Published" },
+  { value: "Cancelled", label: "Cancelled" },
+  { value: "Completed", label: "Completed" },
 ];
 
-export function labelOf<T extends string>(
-  options: { value: T; label: string }[],
-  value: T,
+export function labelOf<T extends { value: string; label: string }>(
+  list: T[],
+  value: string,
 ): string {
-  return options.find((o) => o.value === value)?.label ?? value;
+  return list.find((item) => item.value === value)?.label ?? value;
 }

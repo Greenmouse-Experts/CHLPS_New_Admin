@@ -129,14 +129,14 @@ export function useEvents() {
   const togglePublish = useCallback(
     async (id: string, currentStatus?: EventStatus) => {
       setIsSaving(true);
-      const nextStatus: EventStatus =
-        currentStatus === "published" ? "draft" : "published";
+      const isPub = (currentStatus || "").toLowerCase() === "published";
+      const nextStatus: EventStatus = isPub ? "Draft" : "Published";
 
       try {
         const res = await repo.updateStatus(id, nextStatus);
         if (res.success) {
           toast(
-            nextStatus === "published"
+            nextStatus === "Published"
               ? "Event published"
               : "Event unpublished",
             "success",

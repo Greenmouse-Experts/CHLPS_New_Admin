@@ -155,17 +155,20 @@ export default function EventsPage() {
     {
       key: "toggle_publish",
       label: "Publish / Un-publish",
-      render: (row) => (
-        <span
-          className={
-            row.status === "published"
-              ? "text-amber-600 font-medium"
-              : "text-emerald-600 font-medium"
-          }
-        >
-          {row.status === "published" ? "Un-publish" : "Publish"}
-        </span>
-      ),
+      render: (row) => {
+        const isPub = (row.status || "").toLowerCase() === "published";
+        return (
+          <span
+            className={
+              isPub
+                ? "text-amber-600 font-medium"
+                : "text-emerald-600 font-medium"
+            }
+          >
+            {isPub ? "Un-publish" : "Publish"}
+          </span>
+        );
+      },
       action: (row) => togglePublish(row.id, row.status),
     },
     {

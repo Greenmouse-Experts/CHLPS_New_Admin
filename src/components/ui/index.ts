@@ -52,7 +52,7 @@ export type {} from "./Dropdown";
 export { Modal, ConfirmModal } from "./Modal";
 export { Tabs, TabPanel } from "./Tabs";
 export { RichTextField } from "./RichTextField";
-export { ToastProvider, useToast } from "./Toast";
+export { ToastProvider, useToast, toast } from "./Toast";
 export {
   Shimmer,
   TotalUsersCardShimmer,
