@@ -32,7 +32,7 @@ export type RequiredDocument =
   | "other";
 
 export interface Membership {
-  id: string;
+  id?: string;
   name: string;
   description: string;
   category: MembershipCategory;
