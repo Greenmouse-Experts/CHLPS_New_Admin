@@ -1,10 +1,10 @@
 export type MembershipCategory =
-  | "individual"
   | "student"
-  | "corporate"
-  | "professional"
+  | "affiliate"
+  | "licentiate"
   | "associate"
-  | "other";
+  | "certified"
+  | "corporate";
 
 export type MembershipCurrency = "NGN" | "USD" | "CAD" | "EUR";
 
@@ -92,12 +92,12 @@ export const MEMBERSHIP_CATEGORIES: {
   value: MembershipCategory;
   label: string;
 }[] = [
-  { value: "individual", label: "Individual" },
   { value: "student", label: "Student" },
-  { value: "corporate", label: "Corporate" },
-  { value: "professional", label: "Professional" },
+  { value: "affiliate", label: "Affiliate" },
+  { value: "licentiate", label: "Licentiate" },
   { value: "associate", label: "Associate" },
-  { value: "other", label: "Other" },
+  { value: "certified", label: "Certified" },
+  { value: "corporate", label: "Corporate" },
 ];
 
 export const MEMBERSHIP_CURRENCIES: {

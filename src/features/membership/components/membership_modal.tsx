@@ -39,7 +39,7 @@ interface Props {
 const EMPTY: MembershipPayload = {
   name: "",
   description: "",
-  category: "professional",
+  category: "student",
   eligibilityCriteria: [""],
   price: 0,
   currency: "NGN",
@@ -101,7 +101,9 @@ function ArrayField({
               value={value}
               placeholder={placeholder}
               onChange={(e) =>
-                onChange(values.map((v, i) => (i === index ? e.target.value : v)))
+                onChange(
+                  values.map((v, i) => (i === index ? e.target.value : v)),
+                )
               }
             />
             {values.length > 1 && (
@@ -146,7 +148,12 @@ function LocalImageField({
             alt="Membership"
             className="w-20 h-14 rounded-lg object-cover border border-[#E7E9EB]"
           />
-          <Button type="button" variant="ghost" size="sm" onClick={() => onChange(null)}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => onChange(null)}
+          >
             Remove
           </Button>
         </div>
@@ -188,20 +195,29 @@ export function MembershipModal({
     setForm(membership ? toPayload(membership) : EMPTY);
   }, [open, membership]);
 
-  function set<K extends keyof MembershipPayload>(key: K, value: MembershipPayload[K]) {
+  function set<K extends keyof MembershipPayload>(
+    key: K,
+    value: MembershipPayload[K],
+  ) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
   async function handleSubmit() {
-    const eligibility = form.eligibilityCriteria.map((v) => v.trim()).filter(Boolean);
+    const eligibility = form.eligibilityCriteria
+      .map((v) => v.trim())
+      .filter(Boolean);
     const benefits = form.benefits.map((v) => v.trim()).filter(Boolean);
 
     if (!form.name.trim()) return setError("Membership name is required");
-    if (!form.description.trim()) return setError("Membership description is required");
-    if (!eligibility.length) return setError("Add at least one eligibility criterion");
-    if (!form.price || form.price <= 0) return setError("Membership price is required");
+    if (!form.description.trim())
+      return setError("Membership description is required");
+    if (!eligibility.length)
+      return setError("Add at least one eligibility criterion");
+    if (!form.price || form.price <= 0)
+      return setError("Membership price is required");
     if (!benefits.length) return setError("Add at least one benefit");
-    if (!form.registrationStartDate) return setError("Registration start date is required");
+    if (!form.registrationStartDate)
+      return setError("Registration start date is required");
     if (
       form.registrationEndDate &&
       form.registrationEndDate < form.registrationStartDate
@@ -214,7 +230,9 @@ export function MembershipModal({
       return setError("Renewal price is required when auto-renewal is enabled");
     }
     if (autoRenewal && !form.renewalPeriod) {
-      return setError("Renewal period is required when auto-renewal is enabled");
+      return setError(
+        "Renewal period is required when auto-renewal is enabled",
+      );
     }
 
     const ok = await onSubmit({
@@ -266,14 +284,20 @@ export function MembershipModal({
           required
           value={form.category}
           onChange={(v) => set("category", v as MembershipCategory)}
-          options={MEMBERSHIP_CATEGORIES.map((o) => ({ label: o.label, value: o.value }))}
+          options={MEMBERSHIP_CATEGORIES.map((o) => ({
+            label: o.label,
+            value: o.value,
+          }))}
         />
         <Select
           label="Membership status"
           required
           value={form.status}
           onChange={(v) => set("status", v as MembershipStatus)}
-          options={MEMBERSHIP_STATUSES.map((o) => ({ label: o.label, value: o.value }))}
+          options={MEMBERSHIP_STATUSES.map((o) => ({
+            label: o.label,
+            value: o.value,
+          }))}
         />
 
         <div className="sm:col-span-2">
@@ -282,7 +306,9 @@ export function MembershipModal({
             required
             placeholder="Who can apply"
             values={form.eligibilityCriteria}
-            onChange={(eligibilityCriteria) => set("eligibilityCriteria", eligibilityCriteria)}
+            onChange={(eligibilityCriteria) =>
+              set("eligibilityCriteria", eligibilityCriteria)
+            }
           />
         </div>
 
@@ -300,7 +326,10 @@ export function MembershipModal({
           required
           value={form.currency}
           onChange={(v) => set("currency", v as MembershipCurrency)}
-          options={MEMBERSHIP_CURRENCIES.map((o) => ({ label: o.label, value: o.value }))}
+          options={MEMBERSHIP_CURRENCIES.map((o) => ({
+            label: o.label,
+            value: o.value,
+          }))}
         />
 
         <Select
@@ -314,10 +343,14 @@ export function MembershipModal({
               duration,
               autoRenewal: duration === "lifetime" ? false : prev.autoRenewal,
               renewalPrice: duration === "lifetime" ? null : prev.renewalPrice,
-              renewalPeriod: duration === "lifetime" ? null : prev.renewalPeriod,
+              renewalPeriod:
+                duration === "lifetime" ? null : prev.renewalPeriod,
             }));
           }}
-          options={MEMBERSHIP_DURATIONS.map((o) => ({ label: o.label, value: o.value }))}
+          options={MEMBERSHIP_DURATIONS.map((o) => ({
+            label: o.label,
+            value: o.value,
+          }))}
         />
 
         <div className="flex items-center">
@@ -328,8 +361,12 @@ export function MembershipModal({
               setForm((prev) => ({
                 ...prev,
                 autoRenewal: checked,
-                renewalPrice: checked ? prev.renewalPrice ?? prev.price : null,
-                renewalPeriod: checked ? prev.renewalPeriod ?? "annually" : null,
+                renewalPrice: checked
+                  ? (prev.renewalPrice ?? prev.price)
+                  : null,
+                renewalPeriod: checked
+                  ? (prev.renewalPeriod ?? "annually")
+                  : null,
               }))
             }
             label="Auto-renewal"
@@ -358,7 +395,10 @@ export function MembershipModal({
               required
               value={form.renewalPeriod ?? ""}
               onChange={(v) => set("renewalPeriod", v as RenewalPeriod)}
-              options={RENEWAL_PERIODS.map((o) => ({ label: o.label, value: o.value }))}
+              options={RENEWAL_PERIODS.map((o) => ({
+                label: o.label,
+                value: o.value,
+              }))}
             />
           </>
         )}
@@ -414,7 +454,10 @@ export function MembershipModal({
         />
 
         <div className="sm:col-span-2">
-          <LocalImageField value={form.image} onChange={(image) => set("image", image)} />
+          <LocalImageField
+            value={form.image}
+            onChange={(image) => set("image", image)}
+          />
         </div>
       </div>
 

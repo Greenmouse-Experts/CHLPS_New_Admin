@@ -7,10 +7,10 @@ import {
 export const SEED_MEMBERSHIPS: Membership[] = [
   {
     id: "a1b2c3d4-e5f6-4a7b-8c9d-012345678901",
-    name: "Professional Membership",
+    name: "Certified Membership",
     description:
-      "Full professional membership for practising specialists. Includes voting rights, journal access, and CPD credits.",
-    category: "professional",
+      "Full certified membership for practising specialists. Includes voting rights, journal access, and CPD credits.",
+    category: "certified",
     eligibilityCriteria: [
       "Recognised professional qualification in relevant field",
       "Minimum of 3 years post-qualification experience",
@@ -138,7 +138,7 @@ export const SEED_MEMBERSHIPS: Membership[] = [
     name: "Executive Fellowship",
     description:
       "Exclusive fellowship for senior industry leaders, board executives, and seasoned directors.",
-    category: "individual",
+    category: "licentiate",
     eligibilityCriteria: [
       "Minimum 10 years executive or advisory experience",
       "Recommendation by two fellows or board council members",
@@ -169,7 +169,7 @@ export const SEED_MEMBERSHIPS: Membership[] = [
     name: "Lifetime Fellowship",
     description:
       "One-time lifetime membership for distinguished fellows and emeritus leaders of the society.",
-    category: "professional",
+    category: "certified",
     eligibilityCriteria: [
       "Existing professional member in good standing for at least 5 years",
       "Nominated and approved by executive council",
