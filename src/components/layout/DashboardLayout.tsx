@@ -61,7 +61,7 @@ const NAV_ITEMS: NavItem[] = [
     icon: <Profile2User size={16} color="currentColor" />,
     roles: ["admin"],
     children: [
-      { label: "Admins", href: "/admins", roles: ["admin"] },
+      // { label: "Admins", href: "/admins", roles: ["admin"] },
       { label: "Members", href: "/students", roles: ["admin"] },
     ],
   },
@@ -234,9 +234,7 @@ function NavItemRow({
       className={cn(
         "flex items-center gap-2.5 px-3 py-2.5 rounded-md text-sm font-medium",
         "transition-colors duration-150",
-        isActive
-          ? "bg-accent text-white"
-          : "text-white hover:bg-white/10",
+        isActive ? "bg-accent text-white" : "text-white hover:bg-white/10",
       )}
       title={collapsed ? item.label : undefined}
     >
@@ -397,7 +395,11 @@ export function Header({ title, onMenuToggle, user }: HeaderProps) {
         >
           <div className="w-8 h-8 shrink-0 rounded-full bg-white/15 text-white flex items-center justify-center text-xs font-semibold overflow-hidden">
             {user.avatar ? (
-              <img src={user.avatar} alt="" className="w-full h-full object-cover" />
+              <img
+                src={user.avatar}
+                alt=""
+                className="w-full h-full object-cover"
+              />
             ) : (
               (user?.fullName || "A").trim().toUpperCase()[0]
             )}
@@ -438,7 +440,9 @@ function collectRoutes(items: NavItem[]): { href: string; roles?: Role[] }[] {
   const routes: { href: string; roles?: Role[] }[] = [];
   items.forEach((item) => {
     routes.push({ href: item.href, roles: item.roles });
-    item.children?.forEach((c) => routes.push({ href: c.href, roles: c.roles ?? item.roles }));
+    item.children?.forEach((c) =>
+      routes.push({ href: c.href, roles: c.roles ?? item.roles }),
+    );
   });
   return routes;
 }
