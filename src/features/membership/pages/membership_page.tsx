@@ -150,6 +150,7 @@ export default function MembershipPage() {
         </span>
       ),
       action: (row) => {
+        if (!row.id) return;
         togglePublish(row.id);
       },
     },
@@ -166,7 +167,7 @@ export default function MembershipPage() {
       label: "Delete",
       render: () => <span className="text-error font-medium">Delete</span>,
       action: (row) => {
-        setDeleteId(row.id);
+        setDeleteId(row.id ?? null);
       },
     },
   ];
@@ -248,7 +249,7 @@ export default function MembershipPage() {
           setEditing(null);
         }}
         onSubmit={(payload) =>
-          editing
+          editing && editing.id
             ? updateMembership(editing.id, payload)
             : createMembership(payload)
         }
