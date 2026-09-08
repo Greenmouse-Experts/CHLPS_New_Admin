@@ -5,6 +5,7 @@ import { DashboardLayout, StatCard } from "@/components";
 import { Button, ConfirmModal, Divider, StatusBadge } from "@/components/ui";
 import CustomTable, { columnType } from "@/components/tables/CustomTable";
 import { Actions } from "@/components/tables/pop-up";
+import PageLoader from "@/components/PageLoader";
 import {
   AddCircle,
   Calendar,
@@ -36,6 +37,8 @@ export default function EventsPage() {
     page,
     pageSize,
     isLoading,
+    isError,
+    error,
     isSaving,
     search,
     stats,
@@ -45,6 +48,7 @@ export default function EventsPage() {
     updateEvent,
     togglePublish,
     removeEvent,
+    refetch,
   } = useEvents();
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -89,7 +93,9 @@ export default function EventsPage() {
         label: "Category",
         render: (v) => (
           <span className="text-sm text-base-content whitespace-nowrap">
-            {labelOf(EVENT_CATEGORIES, v)}
+            {typeof v === "object" && v !== null && "name" in v
+              ? (v as { name: string }).name
+              : labelOf(EVENT_CATEGORIES, v)}
           </span>
         ),
       },
@@ -160,7 +166,7 @@ export default function EventsPage() {
           {row.status === "published" ? "Un-publish" : "Publish"}
         </span>
       ),
-      action: (row) => togglePublish(row.id),
+      action: (row) => togglePublish(row.id, row.status),
     },
     {
       key: "edit",
@@ -184,19 +190,19 @@ export default function EventsPage() {
         <div className="grid sm:grid-cols-3 gap-4">
           <StatCard
             title="Total Events"
-            value={stats.totalEvents}
+            value={stats.totalEvents ?? 0}
             loading={isLoading}
             icon={<Calendar size={20} color="#717171" />}
           />
           <StatCard
             title="Total this month"
-            value={stats.totalThisMonth}
+            value={stats.totalThisMonth ?? 0}
             loading={isLoading}
             icon={<People size={20} color="#717171" />}
           />
           <StatCard
             title="Amount Paid"
-            value={formatCurrency(stats.amountPaid, {
+            value={formatCurrency(stats.amountPaid ?? 0, {
               currency: "NGN",
               decimals: 0,
             })}
@@ -228,9 +234,15 @@ export default function EventsPage() {
             </Button>
           </div>
           <Divider />
-          {isLoading ? (
-            <div className="h-48 rounded-xl skeleton" />
-          ) : (
+          <PageLoader
+            query={{
+              data: events,
+              isLoading,
+              isError,
+              error,
+              refetch,
+            }}
+          >
             <CustomTable
               ring={false}
               columns={columns}
@@ -244,7 +256,7 @@ export default function EventsPage() {
                 setPagination: handlePageChange,
               }}
             />
-          )}
+          </PageLoader>
         </div>
       </div>
 
@@ -254,7 +266,10 @@ export default function EventsPage() {
           setEditing(item);
           setModalOpen(true);
         }}
-        onTogglePublish={(id) => togglePublish(id)}
+        onTogglePublish={(id) => {
+          const ev = events.find((e) => e.id === id);
+          togglePublish(id, ev?.status);
+        }}
       />
 
       <EventModal

@@ -6,202 +6,193 @@ import {
   MembershipStatus,
   MembershipSubscriber,
   MembershipTransaction,
+  MembershipStats,
 } from "../response/membership_response";
-import { SEED_MEMBERSHIPS, SEED_SUBSCRIBERS, SEED_TRANSACTIONS } from "../seed";
 import MembershipRepository from "../../repository/membership_repository";
 
 const PAGE_SIZE = 10;
 
-function wait(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function generateUUID(): string {
-  if (typeof crypto !== "undefined" && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === "x" ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
-}
-
-// Global in-memory cache to sync state across views during session
-let memoryMemberships: Membership[] = [...SEED_MEMBERSHIPS];
-let memorySubscribers: MembershipSubscriber[] = [...SEED_SUBSCRIBERS];
-let memoryTransactions: MembershipTransaction[] = [...SEED_TRANSACTIONS];
-const listeners = new Set<() => void>();
-
-function notifyListeners() {
-  listeners.forEach((listener) => listener());
-}
-
 export function useMemberships() {
   const { toast } = useToast();
   const repo = useMemo(() => new MembershipRepository(), []);
-  const [items, setItems] = useState<Membership[]>(memoryMemberships);
+  const [items, setItems] = useState<Membership[]>([]);
+  const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
+  const [error, setError] = useState<unknown>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [stats, setStats] = useState<MembershipStats>({
+    totalMembers: 0,
+    totalThisMonth: 0,
+    amountPaid: 0,
+  });
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      await wait(300);
-      if (!cancelled) {
-        setItems([...memoryMemberships]);
+  const loadData = useCallback(
+    async (p = 1, searchQuery = search) => {
+      setIsLoading(true);
+      setIsError(false);
+      setError(null);
+      try {
+        const [listRes, statsRes] = await Promise.all([
+          repo.list({
+            page: p,
+            pageSize: PAGE_SIZE,
+            search: searchQuery.trim() || undefined,
+          }),
+          repo.getStats().catch(() => ({ success: false, data: undefined })),
+        ]);
+
+        if (listRes.success && listRes.data) {
+          setItems(listRes.data.items ?? []);
+          setTotal(listRes.data.count ?? (listRes.data.items?.length || 0));
+          setPage(p);
+        } else {
+          setIsError(true);
+          setError(listRes.message || "Failed to load memberships");
+        }
+
+        if (statsRes.success && statsRes.data) {
+          setStats(statsRes.data);
+        }
+      } catch (err) {
+        setIsError(true);
+        setError(err);
+      } finally {
         setIsLoading(false);
       }
-    })();
-
-    const updateState = () => {
-      setItems([...memoryMemberships]);
-    };
-    listeners.add(updateState);
-
-    return () => {
-      cancelled = true;
-      listeners.delete(updateState);
-    };
-  }, []);
-
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter(
-      (m) =>
-        m.name.toLowerCase().includes(q) ||
-        m.category.toLowerCase().includes(q) ||
-        m.status.toLowerCase().includes(q) ||
-        m.currency.toLowerCase().includes(q),
-    );
-  }, [items, search]);
-
-  const total = filtered.length;
-  const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
-  const stats = useMemo(
-    () => ({
-      totalMembers: items.reduce((sum, m) => sum + m.membersCount, 0),
-      totalThisMonth: items.reduce((sum, m) => sum + m.membersThisMonth, 0),
-      amountPaid: items.reduce((sum, m) => sum + m.amountPaid, 0),
-    }),
-    [items],
+    },
+    [repo, search],
   );
+
+  useEffect(() => {
+    loadData(1, search);
+  }, [loadData, search]);
 
   const handleSearch = useCallback((value: string) => {
     setSearch(value);
     setPage(1);
   }, []);
 
+  const handlePageChange = useCallback(
+    (nextPage: number) => {
+      loadData(nextPage, search);
+    },
+    [loadData, search],
+  );
+
   const createMembership = useCallback(
     async (payload: MembershipPayload) => {
       setIsSaving(true);
-      await wait(350);
       try {
-        await repo.create(payload);
-      } catch {
-        /* fallback to memory state */
+        const res = await repo.create(payload);
+        if (res.success) {
+          toast("Membership created successfully", "success");
+          loadData(1, search);
+          return true;
+        } else {
+          toast(res.message, "danger");
+          return false;
+        }
+      } catch (err) {
+        toast("Failed to create membership", "danger");
+        return false;
+      } finally {
+        setIsSaving(false);
       }
-      const next: Membership = {
-        ...payload,
-        // id: generateUUID(),
-        membersCount: 0,
-        membersThisMonth: 0,
-        amountPaid: 0,
-        createdDate: new Date().toISOString(),
-      };
-      memoryMemberships = [next, ...memoryMemberships];
-      notifyListeners();
-      setPage(1);
-      setIsSaving(false);
-      toast("Membership created successfully", "success");
-      return true;
     },
-    [repo, toast],
+    [loadData, repo, search, toast],
   );
 
   const updateMembership = useCallback(
-    async (id: string, payload: MembershipPayload) => {
+    async (id: string, payload: Partial<MembershipPayload>) => {
       setIsSaving(true);
-      await wait(350);
       try {
-        await repo.update(id, payload);
-      } catch {
-        /* fallback to memory state */
+        const res = await repo.update(id, payload);
+        if (res.success) {
+          toast("Membership updated successfully", "success");
+          loadData(page, search);
+          return true;
+        } else {
+          toast(res.message, "danger");
+          return false;
+        }
+      } catch (err) {
+        toast("Failed to update membership", "danger");
+        return false;
+      } finally {
+        setIsSaving(false);
       }
-      memoryMemberships = memoryMemberships.map((item) =>
-        item.id === id ? { ...item, ...payload } : item,
-      );
-      notifyListeners();
-      setIsSaving(false);
-      toast("Membership updated successfully", "success");
-      return true;
     },
-    [repo, toast],
+    [loadData, page, repo, search, toast],
   );
 
   const togglePublish = useCallback(
-    async (id: string) => {
-      console.log("id", id);
-      const currentItem = memoryMemberships.find((item) => item.id === id);
-      if (!currentItem) return;
+    async (id: string, currentStatus?: MembershipStatus) => {
       setIsSaving(true);
       const nextStatus: MembershipStatus =
-        currentItem.status === "published" ? "draft" : "published";
+        currentStatus === "published" ? "draft" : "published";
       try {
-        // PATCH /memberships/status/:id (where id is uuid) with body { status: "published" | "draft" }
-        await repo.updateStatus(id, nextStatus);
-      } catch {
-        /* fallback to local sync */
+        const res = await repo.updateStatus(id, nextStatus);
+        if (res.success) {
+          toast(
+            nextStatus === "published"
+              ? "Membership published successfully"
+              : "Membership unpublished (moved to draft)",
+            "success",
+          );
+          loadData(page, search);
+        } else {
+          toast(res.message, "danger");
+        }
+      } catch (err) {
+        toast("Failed to update membership status", "danger");
+      } finally {
+        setIsSaving(false);
       }
-      memoryMemberships = memoryMemberships.map((item) =>
-        item.id === id ? { ...item, status: nextStatus } : item,
-      );
-      notifyListeners();
-      setIsSaving(false);
-      toast(
-        nextStatus === "published"
-          ? "Membership published successfully"
-          : "Membership unpublished (moved to draft)",
-        "success",
-      );
     },
-    [repo, toast],
+    [loadData, page, repo, search, toast],
   );
 
   const removeMembership = useCallback(
     async (id: string) => {
-      await wait(250);
+      setIsSaving(true);
       try {
-        await repo.remove(id);
-      } catch {
-        /* fallback */
+        const res = await repo.remove(id);
+        if (res.success) {
+          toast("Membership deleted successfully", "success");
+          loadData(page, search);
+        } else {
+          toast(res.message, "danger");
+        }
+      } catch (err) {
+        toast("Failed to delete membership", "danger");
+      } finally {
+        setIsSaving(false);
       }
-      memoryMemberships = memoryMemberships.filter((item) => item.id !== id);
-      notifyListeners();
-      toast("Membership deleted successfully", "success");
     },
-    [repo, toast],
+    [loadData, page, repo, search, toast],
   );
 
   return {
-    memberships: pageItems,
+    memberships: items,
     total,
     page,
     pageSize: PAGE_SIZE,
     isLoading,
+    isError,
+    error,
     isSaving,
     search,
     stats,
     handleSearch,
-    handlePageChange: setPage,
+    handlePageChange,
     createMembership,
     updateMembership,
     togglePublish,
     removeMembership,
+    refetch: () => loadData(page, search),
   };
 }
 
@@ -212,92 +203,100 @@ export function useMembershipDetail(id: string) {
   const [subscribers, setSubscribers] = useState<MembershipSubscriber[]>([]);
   const [transactions, setTransactions] = useState<MembershipTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
+  const [error, setError] = useState<unknown>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const loadData = useCallback(() => {
-    const found = memoryMemberships.find((m) => m.id === id) || null;
-    const subs = memorySubscribers.filter((s) => s.membershipId === id);
-    const trxs = memoryTransactions.filter((t) => t.membershipId === id);
-
-    setMembership(found);
-    setSubscribers(subs);
-    setTransactions(trxs);
-    setIsLoading(false);
-  }, [id]);
+  const loadData = useCallback(async () => {
+    if (!id) return;
+    setIsLoading(true);
+    setIsError(false);
+    setError(null);
+    try {
+      const res = await repo.getOne(id);
+      if (res.success && res.data) {
+        setMembership(res.data);
+      } else {
+        setIsError(true);
+        setError(res.message || "Membership not found");
+      }
+    } catch (err) {
+      setIsError(true);
+      setError(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [id, repo]);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setIsLoading(true);
-      await wait(300);
-      if (!cancelled) {
-        loadData();
-      }
-    })();
-
-    listeners.add(loadData);
-    return () => {
-      cancelled = true;
-      listeners.delete(loadData);
-    };
-  }, [id, loadData]);
+    loadData();
+  }, [loadData]);
 
   const updateMembership = useCallback(
-    async (payload: MembershipPayload) => {
+    async (payload: Partial<MembershipPayload>) => {
+      if (!id) return false;
       setIsSaving(true);
-      await wait(350);
       try {
-        await repo.update(id, payload);
-      } catch {
-        /* fallback */
+        const res = await repo.update(id, payload);
+        if (res.success) {
+          toast("Membership updated successfully", "success");
+          loadData();
+          return true;
+        } else {
+          toast(res.message, "danger");
+          return false;
+        }
+      } catch (err) {
+        toast("Failed to update membership", "danger");
+        return false;
+      } finally {
+        setIsSaving(false);
       }
-      memoryMemberships = memoryMemberships.map((item) =>
-        item.id === id ? { ...item, ...payload } : item,
-      );
-      notifyListeners();
-      setIsSaving(false);
-      toast("Membership updated successfully", "success");
-      return true;
     },
-    [id, repo, toast],
+    [id, loadData, repo, toast],
   );
 
   const togglePublish = useCallback(async () => {
-    if (!membership) return;
+    if (!membership || !id) return;
     setIsSaving(true);
     const nextStatus: MembershipStatus =
       membership.status === "published" ? "draft" : "published";
 
     try {
-      // PATCH /memberships/status/:id (where id is uuid) with body { status: "published" | "draft" }
-      await repo.updateStatus(id, nextStatus);
-    } catch {
-      /* fallback */
+      const res = await repo.updateStatus(id, nextStatus);
+      if (res.success) {
+        toast(
+          nextStatus === "published"
+            ? "Membership published successfully"
+            : "Membership unpublished (moved to draft)",
+          "success",
+        );
+        loadData();
+      } else {
+        toast(res.message, "danger");
+      }
+    } catch (err) {
+      toast("Failed to update status", "danger");
+    } finally {
+      setIsSaving(false);
     }
-
-    memoryMemberships = memoryMemberships.map((item) =>
-      item.id === id ? { ...item, status: nextStatus } : item,
-    );
-    notifyListeners();
-    setIsSaving(false);
-    toast(
-      nextStatus === "published"
-        ? "Membership published successfully"
-        : "Membership unpublished (moved to draft)",
-      "success",
-    );
-  }, [id, membership, repo, toast]);
+  }, [id, loadData, membership, repo, toast]);
 
   const removeMembership = useCallback(async () => {
-    await wait(250);
+    if (!id) return;
+    setIsSaving(true);
     try {
-      await repo.remove(id);
-    } catch {
-      /* fallback */
+      const res = await repo.remove(id);
+      if (res.success) {
+        toast("Membership deleted successfully", "success");
+      } else {
+        toast(res.message, "danger");
+      }
+    } catch (err) {
+      toast("Failed to delete membership", "danger");
+    } finally {
+      setIsSaving(false);
     }
-    memoryMemberships = memoryMemberships.filter((item) => item.id !== id);
-    notifyListeners();
-    toast("Membership deleted successfully", "success");
   }, [id, repo, toast]);
 
   return {
@@ -305,10 +304,12 @@ export function useMembershipDetail(id: string) {
     subscribers,
     transactions,
     isLoading,
+    isError,
+    error,
     isSaving,
     updateMembership,
     togglePublish,
     removeMembership,
-    reload: loadData,
+    refetch: loadData,
   };
 }

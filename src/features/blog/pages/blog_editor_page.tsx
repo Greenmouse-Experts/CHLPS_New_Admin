@@ -3,7 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DashboardLayout } from "@/components";
-import { Button, RichTextField, TextField, Select, useToast } from "@/components/ui";
+import {
+  Button,
+  RichTextField,
+  TextField,
+  Select,
+  useToast,
+} from "@/components/ui";
+import PageLoader from "@/components/PageLoader";
 import BlogRepository from "../domain/repository/blog_repository";
 import UploadRepository from "@/features/uploads/domain/repository/upload_repository";
 import { BlogTag } from "../domain/data/response/blog_response";
@@ -22,76 +29,262 @@ export default function BlogEditorPage({ postId }: { postId?: string }) {
   const [file, setFile] = useState<File | null>(null);
   const [existingCover, setExistingCover] = useState("");
   const [busy, setBusy] = useState(false);
+  const [loadingPost, setLoadingPost] = useState(Boolean(postId));
+  const [postError, setPostError] = useState<unknown>(null);
+
+  const fetchPost = async () => {
+    if (!postId) return;
+    setLoadingPost(true);
+    setPostError(null);
+    try {
+      const res = await repo.getPost(postId);
+      if (res.success && res.data) {
+        const p = res.data;
+        setTitle(p.title);
+        setBrief(p.brief ?? "");
+        setDescription(p.description ?? "");
+        setPublished(p.isPublished ? "true" : "false");
+        setExistingCover(p.coverImage ?? "");
+        setSelected(
+          (p.tags ?? []).map((t) =>
+            typeof t === "object" && t.id ? t.id : String(t),
+          ),
+        );
+      } else {
+        setPostError(res.message || "Failed to load post");
+      }
+    } catch (err) {
+      setPostError(err);
+    } finally {
+      setLoadingPost(false);
+    }
+  };
 
   useEffect(() => {
     repo.listTags().then((res) => {
-      if (res.success && res.data) setTags(res.data.filter((t) => t.isPublished !== false));
+      if (res.success && res.data)
+        setTags(res.data.filter((t) => t.isPublished !== false));
     });
+
     if (postId) {
-      repo.getPost(postId).then((res) => {
-        if (res.success && res.data) {
-          const p = res.data;
-          setTitle(p.title);
-          setBrief(p.brief ?? "");
-          setDescription(p.description ?? "");
-          setPublished(p.isPublished ? "true" : "false");
-          setExistingCover(p.coverImage ?? "");
-          setSelected((p.tags ?? []).map((t) => t.id));
-        }
-      });
+      fetchPost();
     }
   }, [postId]);
 
   return (
     <DashboardLayout title={postId ? "Edit Post" : "Create Post"}>
-      <form
-        className="bg-white rounded-xl border border-[#E7E9EB] p-6 space-y-4 w-full"
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setBusy(true);
-          let cover = existingCover;
-          if (file) {
-            const up = await uploads.upload("image", file);
-            if (!up.success || !up.url) { toast(up.message, "danger"); setBusy(false); return; }
-            cover = up.url;
-          }
-          const payload = {
-            title, brief, description, coverImage: cover,
-            isPublished: published === "true",
-            tags: selected.map((id) => ({ id })),
-          };
-          const res = postId ? await repo.updatePost(postId, payload) : await repo.createPost(payload);
-          setBusy(false);
-          if (res.success) { toast(res.message, "success"); router.push("/blog"); }
-          else toast(res.message, "danger");
-        }}
-      >
-        <TextField label="Title" required value={title} onChange={(e) => setTitle(e.target.value)} />
-        <TextField label="Brief" value={brief} onChange={(e) => setBrief(e.target.value)} />
-        <RichTextField label="Description" value={description} onChange={setDescription} minHeight="360px" placeholder="Write the post body…" />
-        <Select label="Published" value={published} onChange={setPublished}
-          options={[{ label: "Draft", value: "false" }, { label: "Published", value: "true" }]} />
-        <div>
-          <p className="text-sm font-medium mb-1.5">Tags</p>
-          <div className="flex flex-wrap gap-2">
-            {tags.map((t) => (
-              <button
-                type="button"
-                key={t.id}
-                onClick={() => setSelected((s) => s.includes(t.id) ? s.filter((x) => x !== t.id) : [...s, t.id])}
-                className={`px-3 py-1 rounded-full text-xs border ${selected.includes(t.id) ? "bg-black text-white" : "border-[#E7E9EB]"}`}
-              >
-                {t.tag}
-              </button>
-            ))}
+      {postId ? (
+        <PageLoader
+          query={{
+            data: title || !loadingPost ? true : undefined,
+            isLoading: loadingPost,
+            isError: Boolean(postError),
+            error: postError,
+            refetch: fetchPost,
+          }}
+        >
+          <form
+            className="bg-white rounded-xl border border-[#E7E9EB] p-6 space-y-4 w-full"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setBusy(true);
+              let cover = existingCover;
+              if (file) {
+                const up = await uploads.upload("image", file);
+                if (!up.success || !up.url) {
+                  toast(up.message, "danger");
+                  setBusy(false);
+                  return;
+                }
+                cover = up.url;
+              }
+              const payload = {
+                title,
+                brief,
+                description,
+                coverImage: cover,
+                isPublished: published === "true",
+                tags: selected.map((id) => ({ id })),
+              };
+              const res = await repo.updatePost(postId, payload);
+              setBusy(false);
+              if (res.success) {
+                toast(res.message, "success");
+                router.push("/blog");
+              } else toast(res.message, "danger");
+            }}
+          >
+            <TextField
+              label="Title"
+              required
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+            <TextField
+              label="Brief"
+              value={brief}
+              onChange={(e) => setBrief(e.target.value)}
+            />
+            <RichTextField
+              label="Description"
+              value={description}
+              onChange={setDescription}
+              minHeight="360px"
+              placeholder="Write the post body…"
+            />
+            <Select
+              label="Published"
+              value={published}
+              onChange={setPublished}
+              options={[
+                { label: "Draft", value: "false" },
+                { label: "Published", value: "true" },
+              ]}
+            />
+            <div>
+              <p className="text-sm font-medium mb-1.5">Tags</p>
+              <div className="flex flex-wrap gap-2">
+                {tags.map((t) => (
+                  <button
+                    type="button"
+                    key={t.id}
+                    onClick={() =>
+                      setSelected((s) =>
+                        s.includes(t.id)
+                          ? s.filter((x) => x !== t.id)
+                          : [...s, t.id],
+                      )
+                    }
+                    className={`px-3 py-1 rounded-full text-xs border cursor-pointer transition-colors ${
+                      selected.includes(t.id)
+                        ? "bg-black text-white"
+                        : "border-[#E7E9EB] hover:bg-base-200"
+                    }`}
+                  >
+                    {t.tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-sm font-medium mb-1.5">Cover image</p>
+              {existingCover && (
+                <div className="mb-2">
+                  <img
+                    src={existingCover}
+                    alt=""
+                    className="w-32 h-20 rounded-lg object-cover border border-[#E7E9EB]"
+                  />
+                </div>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              />
+            </div>
+            <Button type="submit" loading={busy}>
+              Update post
+            </Button>
+          </form>
+        </PageLoader>
+      ) : (
+        <form
+          className="bg-white rounded-xl border border-[#E7E9EB] p-6 space-y-4 w-full"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setBusy(true);
+            let cover = existingCover;
+            if (file) {
+              const up = await uploads.upload("image", file);
+              if (!up.success || !up.url) {
+                toast(up.message, "danger");
+                setBusy(false);
+                return;
+              }
+              cover = up.url;
+            }
+            const payload = {
+              title,
+              brief,
+              description,
+              coverImage: cover,
+              isPublished: published === "true",
+              tags: selected.map((id) => ({ id })),
+            };
+            const res = await repo.createPost(payload);
+            setBusy(false);
+            if (res.success) {
+              toast(res.message, "success");
+              router.push("/blog");
+            } else toast(res.message, "danger");
+          }}
+        >
+          <TextField
+            label="Title"
+            required
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+          <TextField
+            label="Brief"
+            value={brief}
+            onChange={(e) => setBrief(e.target.value)}
+          />
+          <RichTextField
+            label="Description"
+            value={description}
+            onChange={setDescription}
+            minHeight="360px"
+            placeholder="Write the post body…"
+          />
+          <Select
+            label="Published"
+            value={published}
+            onChange={setPublished}
+            options={[
+              { label: "Draft", value: "false" },
+              { label: "Published", value: "true" },
+            ]}
+          />
+          <div>
+            <p className="text-sm font-medium mb-1.5">Tags</p>
+            <div className="flex flex-wrap gap-2">
+              {tags.map((t) => (
+                <button
+                  type="button"
+                  key={t.id}
+                  onClick={() =>
+                    setSelected((s) =>
+                      s.includes(t.id)
+                        ? s.filter((x) => x !== t.id)
+                        : [...s, t.id],
+                    )
+                  }
+                  className={`px-3 py-1 rounded-full text-xs border cursor-pointer transition-colors ${
+                    selected.includes(t.id)
+                      ? "bg-black text-white"
+                      : "border-[#E7E9EB] hover:bg-base-200"
+                  }`}
+                >
+                  {t.tag}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-        <div>
-          <p className="text-sm font-medium mb-1.5">Cover image</p>
-          <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-        </div>
-        <Button type="submit" loading={busy}>{postId ? "Update" : "Create"} post</Button>
-      </form>
+          <div>
+            <p className="text-sm font-medium mb-1.5">Cover image</p>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            />
+          </div>
+          <Button type="submit" loading={busy}>
+            Create post
+          </Button>
+        </form>
+      )}
     </DashboardLayout>
   );
 }

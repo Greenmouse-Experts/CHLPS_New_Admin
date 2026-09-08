@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState, type PropsWithChildren } from "react";
+import { useEffect, useState, type PropsWithChildren } from "react";
 import { useFormContext } from "react-hook-form";
 import type { ApiResponse } from "@/api/simpleApi";
 import apiClient from "@/api/simpleApi";
@@ -10,27 +10,54 @@ interface SimpleSelectProps<T = any> extends PropsWithChildren {
   onChange?: (value: string | null) => void;
   label?: string;
   name?: string;
+  placeholder?: string;
+  autoSelectFirst?: boolean;
   render: (item: T, index: number) => React.ReactNode;
   extractItems?: (data: any) => T[];
 }
 
 export default function SimpleSelect<T = any>(props: SimpleSelectProps<T>) {
-  const { route, value, onChange, label, name, render, extractItems } = props;
+  const {
+    route,
+    value,
+    onChange,
+    label,
+    name,
+    placeholder = "Select an option",
+    autoSelectFirst = true,
+    render,
+    extractItems,
+  } = props;
 
   // SAFE: prevents crash when no FormProvider exists
   let formState: any = null;
+  let formValue: any = undefined;
+  let setValue: any = null;
   try {
-    formState = useFormContext()?.formState;
+    const ctx = useFormContext();
+    if (ctx) {
+      formState = ctx.formState;
+      setValue = ctx.setValue;
+      if (name) {
+        formValue = ctx.watch(name);
+      }
+    }
   } catch {
     formState = null;
   }
 
   const error = name && formState ? formState.errors?.[name] : undefined;
 
-  // Controlled when a `value` prop is supplied; otherwise fall back to local state.
+  // Controlled when a `value` prop is supplied, or tracked via react-hook-form
   const isControlled = value !== undefined;
+  const isHookForm = !isControlled && Boolean(name && setValue);
   const [internalValue, setInternalValue] = useState<string | null>(null);
-  const currentValue = isControlled ? (value ?? null) : internalValue;
+
+  const currentValue = isControlled
+    ? (value ?? null)
+    : isHookForm
+      ? (formValue ?? null)
+      : internalValue;
 
   const query = useQuery({
     queryKey: ["select", route],
@@ -40,10 +67,43 @@ export default function SimpleSelect<T = any>(props: SimpleSelectProps<T>) {
     },
   });
 
+  const raw = query.data?.data as any;
+  const items: T[] = extractItems
+    ? extractItems(raw)
+    : Array.isArray(raw)
+      ? raw
+      : Array.isArray(raw?.data)
+        ? raw.data
+        : Array.isArray(raw?.items)
+          ? raw.items
+          : [];
+
   const handleChange = (next: string | null) => {
-    if (!isControlled) setInternalValue(next);
-    onChange?.(next);
+    const val = next === "" || next === "null" ? null : next;
+    if (!isControlled && !isHookForm) setInternalValue(val);
+    if (isHookForm && setValue && name) {
+      setValue(name, val ?? "", { shouldValidate: true, shouldDirty: true });
+    }
+    onChange?.(val);
   };
+
+  // Auto-select first item when loaded if none is selected
+  useEffect(() => {
+    if (!items || items.length === 0) return;
+    const hasValue =
+      currentValue !== null &&
+      currentValue !== undefined &&
+      currentValue !== "" &&
+      currentValue !== "null";
+
+    if (!hasValue && (autoSelectFirst || items.length === 1)) {
+      const first = items[0] as any;
+      const firstVal = first?.id ?? first?.value ?? first?._id ?? null;
+      if (firstVal) {
+        handleChange(String(firstVal));
+      }
+    }
+  }, [items, currentValue, autoSelectFirst]);
 
   if (query.isLoading)
     return (
@@ -62,10 +122,11 @@ export default function SimpleSelect<T = any>(props: SimpleSelectProps<T>) {
           className="select select-md w-full select-bordered"
           id={`select-${route}`}
         >
-          <option value="">Loading...</option>
+          <option value="">Loading options...</option>
         </select>
       </div>
     );
+
   if (query.isError)
     return (
       <div className="w-full">
@@ -88,15 +149,6 @@ export default function SimpleSelect<T = any>(props: SimpleSelectProps<T>) {
       </div>
     );
 
-  const raw = query.data?.data as any;
-  const items: T[] = extractItems
-    ? extractItems(raw)
-    : Array.isArray(raw)
-      ? raw
-      : Array.isArray(raw?.data)
-        ? raw.data
-        : [];
-
   return (
     <div className="w-full space-y-2">
       {label && (
@@ -105,17 +157,13 @@ export default function SimpleSelect<T = any>(props: SimpleSelectProps<T>) {
         </div>
       )}
       <select
-        value={currentValue === null ? "null" : currentValue}
-        onChange={(e) =>
-          handleChange(e.target.value === "null" ? null : e.target.value)
-        }
+        value={currentValue ?? ""}
+        onChange={(e) => handleChange(e.target.value)}
         className={`select select-md w-full select-bordered ${error ? "select-error" : ""}`}
         id={`select-${route}`}
         name={name || `select-${route}`}
       >
-        <option value="null" disabled>
-          None
-        </option>
+        <option value="">{placeholder}</option>
         {items.map((item, idx) => render(item, idx))}
       </select>
       {error && (

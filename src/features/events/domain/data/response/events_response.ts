@@ -1,3 +1,5 @@
+import { ApiResponse } from "@/lib/network/entity/api_response";
+
 export type EventCategory =
   | "conference"
   | "workshop"
@@ -24,7 +26,8 @@ export interface EventItem {
   id: string;
   name: string;
   description: string;
-  category: EventCategory;
+  category: EventCategory | string;
+  categoryId?: string;
   image: string | null;
   startDate: string;
   startTime: string;
@@ -37,6 +40,7 @@ export interface EventItem {
   registrationOpens: string | null;
   registrationCloses: string | null;
   maxAttendees: number | null;
+  maximumAttendees?: number | null;
   eligibility: EventEligibility;
   price: number;
   currency: EventCurrency;
@@ -50,10 +54,26 @@ export interface EventItem {
   createdDate: string;
 }
 
+export interface EventStats {
+  totalEvents?: number;
+  totalThisMonth?: number;
+  amountPaid?: number;
+  upcomingEvents?: number;
+  completedEvents?: number;
+  totalRegistrations?: number;
+}
+
 export type EventPayload = Omit<
   EventItem,
   "id" | "attendeesCount" | "attendeesThisMonth" | "amountPaid" | "createdDate"
 >;
+
+export type EventsApiResponse = ApiResponse<{
+  items: EventItem[];
+  count: number;
+}>;
+export type EventApiResponse = ApiResponse<EventItem>;
+export type EventStatsApiResponse = ApiResponse<EventStats>;
 
 export const EVENT_CATEGORIES: { value: EventCategory; label: string }[] = [
   { value: "conference", label: "Conference" },

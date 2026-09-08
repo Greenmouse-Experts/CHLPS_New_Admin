@@ -1,16 +1,18 @@
-import { ApiResponse } from "@/lib/network/simpleApi";
+import { ApiResponse } from "@/types";
 import type { AxiosError } from "axios";
 import axios from "axios";
 
 interface ValidationError {
-  field: string;
+  field?: string;
   message: string;
 }
 
 const format_errors = (body: Record<string, unknown>): string | null => {
   const errors = body.errors;
   if (!Array.isArray(errors) || errors.length === 0) return null;
-  return (errors as ValidationError[]).map((e) => e.message).join("\n");
+  return (errors as ValidationError[])
+    .map((e) => (typeof e === "string" ? e : e.message))
+    .join("\n");
 };
 
 export const extract_message = (data: unknown): string => {
@@ -39,5 +41,5 @@ export const extract_message = (data: unknown): string => {
 
   if (typeof data === "string") return data;
 
-  return "";
+  return "An unexpected error occurred. Please try again.";
 };

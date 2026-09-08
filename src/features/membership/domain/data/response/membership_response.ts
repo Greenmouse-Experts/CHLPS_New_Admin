@@ -1,58 +1,75 @@
-export type MembershipCategory =
-  | "student"
-  | "affiliate"
-  | "licentiate"
-  | "associate"
-  | "certified"
-  | "corporate";
+import { ApiResponse } from "@/lib/network/entity/api_response";
 
-export type MembershipCurrency = "NGN" | "USD" | "CAD" | "EUR";
+export type MembershipCurrency = "NGN" | "USD" | "CAD" | "EUR" | "GBP" | string;
 
-export type MembershipDuration =
-  | "1_month"
-  | "3_months"
-  | "6_months"
-  | "1_year"
-  | "2_years"
-  | "lifetime";
+export type MembershipStatus = "draft" | "published" | "closed" | string;
 
-export type RenewalPeriod =
-  | MembershipDuration
-  | "monthly"
-  | "quarterly"
-  | "annually";
+export interface JobOpportunityItem {
+  id?: string;
+  title: string;
+  iconUrl?: string;
+  description: string;
+}
 
-export type MembershipStatus = "draft" | "published" | "closed";
+export interface HelpItem {
+  id?: string;
+  title: string;
+  iconUrl?: string;
+  description: string;
+}
 
-export type RequiredDocument =
-  | "national_id"
-  | "passport"
-  | "drivers_licence"
-  | "certificate"
-  | "other";
+export interface WhyJoinNowInfoCard {
+  id?: string;
+  title: string;
+  description: string;
+}
+
+export interface WhyJoinNowHighlight {
+  id?: string;
+  value: string;
+}
+
+export interface WhyJoinNowSection {
+  heading?: string;
+  description?: string;
+  infoCards?: WhyJoinNowInfoCard[];
+  highlights?: WhyJoinNowHighlight[];
+}
+
+export interface MembershipTypeRef {
+  id: string;
+  name: string;
+  slug?: string;
+}
 
 export interface Membership {
   id?: string;
   name: string;
+  slug?: string;
   description: string;
-  category: MembershipCategory;
+  type?: MembershipTypeRef | string | null;
+  typeId?: string;
+  category?: string;
   eligibilityCriteria: string[];
   price: number;
   currency: MembershipCurrency;
-  duration: MembershipDuration;
+  duration: string;
   autoRenewal: boolean;
-  renewalPrice: number | null;
-  renewalPeriod: RenewalPeriod | null;
+  renewalPrice?: number | null;
+  renewalPeriod?: string | null;
   benefits: string[];
-  requiredDocuments: RequiredDocument[];
-  registrationStartDate: string;
-  registrationEndDate: string | null;
+  requiredDocuments: string[];
+  jobOpportunities?: JobOpportunityItem[];
+  howMembershipHelps?: HelpItem[];
+  whyJoinNow?: WhyJoinNowSection;
+  registrationStartDate?: string;
+  registrationEndDate?: string | null;
   status: MembershipStatus;
-  image: string | null;
-  membersCount: number;
-  membersThisMonth: number;
-  amountPaid: number;
-  createdDate: string;
+  image?: string | null;
+  membersCount?: number;
+  membersThisMonth?: number;
+  amountPaid?: number;
+  createdDate?: string;
 }
 
 export interface MembershipSubscriber {
@@ -65,7 +82,7 @@ export interface MembershipSubscriber {
   avatar?: string;
   joinedDate: string;
   expiryDate: string;
-  status: "active" | "expired" | "pending";
+  status: "active" | "expired" | "pending" | string;
   amountPaid: number;
   currency: MembershipCurrency;
 }
@@ -78,9 +95,17 @@ export interface MembershipTransaction {
   memberEmail: string;
   amount: number;
   currency: MembershipCurrency;
-  paymentMethod: "card" | "bank_transfer" | "wallet";
-  status: "successful" | "pending" | "failed";
+  paymentMethod: "card" | "bank_transfer" | "wallet" | string;
+  status: "successful" | "pending" | "failed" | string;
   date: string;
+}
+
+export interface MembershipStats {
+  totalMembers?: number;
+  totalMemberships?: number;
+  totalThisMonth?: number;
+  amountPaid?: number;
+  activeSubscribers?: number;
 }
 
 export type MembershipPayload = Omit<
@@ -88,45 +113,22 @@ export type MembershipPayload = Omit<
   "id" | "membersCount" | "membersThisMonth" | "amountPaid" | "createdDate"
 >;
 
-export const MEMBERSHIP_CATEGORIES: {
-  value: MembershipCategory;
-  label: string;
-}[] = [
-  { value: "student", label: "Student" },
-  { value: "affiliate", label: "Affiliate" },
-  { value: "licentiate", label: "Licentiate" },
-  { value: "associate", label: "Associate" },
-  { value: "certified", label: "Certified" },
-  { value: "corporate", label: "Corporate" },
-];
+export type MembershipsApiResponse = ApiResponse<{
+  items: Membership[];
+  count: number;
+}>;
+export type MembershipApiResponse = ApiResponse<Membership>;
+export type MembershipStatsApiResponse = ApiResponse<MembershipStats>;
 
 export const MEMBERSHIP_CURRENCIES: {
   value: MembershipCurrency;
   label: string;
 }[] = [
+  { value: "CAD", label: "CAD" },
   { value: "NGN", label: "NGN" },
   { value: "USD", label: "USD" },
-  { value: "CAD", label: "CAD" },
+  { value: "GBP", label: "GBP" },
   { value: "EUR", label: "EUR" },
-];
-
-export const MEMBERSHIP_DURATIONS: {
-  value: MembershipDuration;
-  label: string;
-}[] = [
-  { value: "1_month", label: "1 Month" },
-  { value: "3_months", label: "3 Months" },
-  { value: "6_months", label: "6 Months" },
-  { value: "1_year", label: "1 Year" },
-  { value: "2_years", label: "2 Years" },
-  { value: "lifetime", label: "Lifetime" },
-];
-
-export const RENEWAL_PERIODS: { value: RenewalPeriod; label: string }[] = [
-  ...MEMBERSHIP_DURATIONS,
-  { value: "monthly", label: "Monthly" },
-  { value: "quarterly", label: "Quarterly" },
-  { value: "annually", label: "Annually" },
 ];
 
 export const MEMBERSHIP_STATUSES: { value: MembershipStatus; label: string }[] =
@@ -134,15 +136,6 @@ export const MEMBERSHIP_STATUSES: { value: MembershipStatus; label: string }[] =
     { value: "draft", label: "Draft" },
     { value: "published", label: "Published" },
     { value: "closed", label: "Closed" },
-  ];
-
-export const REQUIRED_DOCUMENTS: { value: RequiredDocument; label: string }[] =
-  [
-    { value: "national_id", label: "National ID" },
-    { value: "passport", label: "Passport" },
-    { value: "drivers_licence", label: "Driver's Licence" },
-    { value: "certificate", label: "Certificate" },
-    { value: "other", label: "Other" },
   ];
 
 export function labelOf<T extends string>(

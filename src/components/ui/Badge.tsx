@@ -4,7 +4,7 @@ import React from "react";
 import { cn, statusConfig, StatusVariant } from "@/lib/tokens";
 
 interface StatusBadgeProps {
-  status: StatusVariant;
+  status?: StatusVariant | string | null;
   size?: "xs" | "sm" | "md";
   showDot?: boolean;
   className?: string;
@@ -16,7 +16,20 @@ const StatusBadge = ({
   showDot = true,
   className,
 }: StatusBadgeProps) => {
-  const config = statusConfig[status];
+  const normalizedKey =
+    typeof status === "string" ? status.toLowerCase().trim() : "";
+
+  const config = (normalizedKey &&
+    statusConfig[normalizedKey as StatusVariant]) || {
+    label: status
+      ? String(status)
+          .replace(/[-_]/g, " ")
+          .replace(/\b\w/g, (c) => c.toUpperCase())
+      : "Draft",
+    dotColor: "#717171",
+    textColor: "#374151",
+    bgColor: "#F1F1F1",
+  };
 
   const sizeStyles = {
     xs: "text-2xs px-1.5 py-0.5 gap-1",
@@ -52,7 +65,6 @@ const StatusBadge = ({
     </span>
   );
 };
-
 
 interface CountBadgeProps {
   count: number;
@@ -97,7 +109,6 @@ const CountBadge = ({
     </span>
   );
 };
-
 
 interface TagProps {
   children: React.ReactNode;
@@ -146,7 +157,6 @@ const Tag = ({
     </span>
   );
 };
-
 
 interface BannerProps {
   children: React.ReactNode;

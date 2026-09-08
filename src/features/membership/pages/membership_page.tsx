@@ -6,6 +6,7 @@ import { DashboardLayout, StatCard } from "@/components";
 import { Button, ConfirmModal, Divider, StatusBadge } from "@/components/ui";
 import CustomTable, { columnType } from "@/components/tables/CustomTable";
 import { Actions } from "@/components/tables/pop-up";
+import PageLoader from "@/components/PageLoader";
 import {
   AddCircle,
   Calendar,
@@ -14,12 +15,7 @@ import {
   Wallet3,
 } from "iconsax-react";
 import { useMemberships } from "../domain/data/hooks/membership_hook";
-import {
-  Membership,
-  MEMBERSHIP_CATEGORIES,
-  MEMBERSHIP_DURATIONS,
-  labelOf,
-} from "../domain/data/response/membership_response";
+import { Membership } from "../domain/data/response/membership_response";
 import { MembershipModal } from "../components/membership_modal";
 import { formatDate } from "@/utils/helper/formate_date";
 import { formatCurrency } from "@/utils/helper/format_num";
@@ -32,6 +28,8 @@ export default function MembershipPage() {
     page,
     pageSize,
     isLoading,
+    isError,
+    error,
     isSaving,
     search,
     stats,
@@ -41,6 +39,7 @@ export default function MembershipPage() {
     updateMembership,
     togglePublish,
     removeMembership,
+    refetch,
   } = useMemberships();
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -76,11 +75,13 @@ export default function MembershipPage() {
       ),
     },
     {
-      key: "category",
-      label: "Category",
-      render: (v) => (
+      key: "type",
+      label: "Type",
+      render: (_, row) => (
         <span className="text-sm font-medium text-base-content">
-          {labelOf(MEMBERSHIP_CATEGORIES, v)}
+          {typeof row.type === "object" && row.type !== null
+            ? row.type.name
+            : (row.type ?? row.category ?? "—")}
         </span>
       ),
     },
@@ -89,7 +90,7 @@ export default function MembershipPage() {
       label: "Price",
       render: (v, row) => (
         <span className="text-sm font-semibold text-base-content whitespace-nowrap">
-          {formatCurrency(Number(v) || 0, { currency: row.currency })}
+          {formatCurrency(Number(v) || 0, { currency: row.currency || "NGN" })}
         </span>
       ),
     },
@@ -98,25 +99,16 @@ export default function MembershipPage() {
       label: "Duration",
       render: (v) => (
         <span className="text-sm text-base-content/80 whitespace-nowrap">
-          {labelOf(MEMBERSHIP_DURATIONS, v)}
+          {String(v || "—")}
         </span>
       ),
     },
     {
-      key: "membersCount",
-      label: "Members",
-      render: (v) => (
-        <span className="text-sm font-medium text-base-content">
-          {Number(v) || 0}
-        </span>
-      ),
-    },
-    {
-      key: "registrationStartDate",
-      label: "Opens",
+      key: "createdDate",
+      label: "Created",
       render: (v) => (
         <span className="text-sm text-base-content/80 whitespace-nowrap">
-          {formatDate(v, "DD MMM YYYY")}
+          {v ? formatDate(v, "DD MMM YYYY") : "—"}
         </span>
       ),
     },
@@ -132,6 +124,7 @@ export default function MembershipPage() {
       key: "view_details",
       label: "View Details",
       action: (row, r) => {
+        if (!row.id) return;
         r.push(`/membership/${row.id}`);
       },
     },
@@ -151,7 +144,7 @@ export default function MembershipPage() {
       ),
       action: (row) => {
         if (!row.id) return;
-        togglePublish(row.id);
+        togglePublish(row.id, row.status);
       },
     },
     {
@@ -178,19 +171,19 @@ export default function MembershipPage() {
         <div className="grid sm:grid-cols-3 gap-4">
           <StatCard
             title="Total Members"
-            value={stats.totalMembers}
+            value={stats.totalMembers ?? stats.totalMemberships ?? 0}
             loading={isLoading}
             icon={<People size={20} color="#717171" />}
           />
           <StatCard
             title="Total this month"
-            value={stats.totalThisMonth}
+            value={stats.totalThisMonth ?? 0}
             loading={isLoading}
             icon={<Calendar size={20} color="#717171" />}
           />
           <StatCard
             title="Amount Paid"
-            value={formatCurrency(stats.amountPaid, {
+            value={formatCurrency(stats.amountPaid ?? 0, {
               currency: "NGN",
               decimals: 0,
             })}
@@ -224,19 +217,31 @@ export default function MembershipPage() {
 
           <Divider />
 
-          <CustomTable
-            ring={false}
-            columns={columns}
-            data={memberships}
-            actions={actions}
-            totalCount={total}
-            onRowClick={(item) => router.push(`/membership/${item.id}`)}
-            paginationProps={{
-              page,
-              pageSize,
-              setPagination: handlePageChange,
+          <PageLoader
+            query={{
+              data: memberships,
+              isLoading,
+              isError,
+              error,
+              refetch,
             }}
-          />
+          >
+            <CustomTable
+              ring={false}
+              columns={columns}
+              data={memberships}
+              actions={actions}
+              totalCount={total}
+              onRowClick={(item) =>
+                item.id && router.push(`/membership/${item.id}`)
+              }
+              paginationProps={{
+                page,
+                pageSize,
+                setPagination: handlePageChange,
+              }}
+            />
+          </PageLoader>
         </div>
       </div>
 

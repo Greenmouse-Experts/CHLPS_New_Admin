@@ -34,10 +34,21 @@ export type StatusVariant =
   | "closed"
   | "confirmed"
   | "cancelled"
+  | "canceled"
   | "completed"
   | "revoked"
   | "unread"
-  | "read";
+  | "read"
+  | "upcoming"
+  | "ongoing"
+  | "past"
+  | "open"
+  | "live"
+  | "expired"
+  | "archived"
+  | "successful"
+  | "failed"
+  | "in_progress";
 
 export const statusConfig: Record<
   StatusVariant,
@@ -121,6 +132,12 @@ export const statusConfig: Record<
     textColor: "#991B1B",
     bgColor: "#FDF0F0",
   },
+  canceled: {
+    label: "Cancelled",
+    dotColor: "#E84D52",
+    textColor: "#991B1B",
+    bgColor: "#FDF0F0",
+  },
   completed: {
     label: "Completed",
     dotColor: "#38CB89",
@@ -145,6 +162,66 @@ export const statusConfig: Record<
     textColor: "#166534",
     bgColor: "#E8F8F1",
   },
+  upcoming: {
+    label: "Upcoming",
+    dotColor: "#3B82F6",
+    textColor: "#1D4ED8",
+    bgColor: "#EFF6FF",
+  },
+  ongoing: {
+    label: "Ongoing",
+    dotColor: "#38CB89",
+    textColor: "#166534",
+    bgColor: "#E8F8F1",
+  },
+  past: {
+    label: "Past",
+    dotColor: "#717171",
+    textColor: "#374151",
+    bgColor: "#F1F1F1",
+  },
+  open: {
+    label: "Open",
+    dotColor: "#38CB89",
+    textColor: "#166534",
+    bgColor: "#E8F8F1",
+  },
+  live: {
+    label: "Live",
+    dotColor: "#E84D52",
+    textColor: "#991B1B",
+    bgColor: "#FDF0F0",
+  },
+  expired: {
+    label: "Expired",
+    dotColor: "#E84D52",
+    textColor: "#991B1B",
+    bgColor: "#FDF0F0",
+  },
+  archived: {
+    label: "Archived",
+    dotColor: "#717171",
+    textColor: "#374151",
+    bgColor: "#F1F1F1",
+  },
+  successful: {
+    label: "Successful",
+    dotColor: "#38CB89",
+    textColor: "#166534",
+    bgColor: "#E8F8F1",
+  },
+  failed: {
+    label: "Failed",
+    dotColor: "#E84D52",
+    textColor: "#991B1B",
+    bgColor: "#FDF0F0",
+  },
+  in_progress: {
+    label: "In Progress",
+    dotColor: "#EED202",
+    textColor: "#854D0E",
+    bgColor: "#FEFAE0",
+  },
 };
 
 export type Size = "xs" | "sm" | "md" | "lg";
@@ -164,17 +241,30 @@ export function cn(...classes: (string | undefined | null | false)[]): string {
 
 export function unwrapList<T>(payload: unknown): T[] {
   if (Array.isArray(payload)) return payload as T[];
-  if (payload && typeof payload === "object" && "data" in payload) {
-    const inner = (payload as { data: unknown }).data;
-    if (Array.isArray(inner)) return inner as T[];
+  if (payload && typeof payload === "object") {
+    const obj = payload as Record<string, unknown>;
+    if (Array.isArray(obj.data)) return obj.data as T[];
+    if (Array.isArray(obj.items)) return obj.items as T[];
+    if (Array.isArray(obj.results)) return obj.results as T[];
+    if (obj.data && typeof obj.data === "object") {
+      const inner = obj.data as Record<string, unknown>;
+      if (Array.isArray(inner.items)) return inner.items as T[];
+      if (Array.isArray(inner.data)) return inner.data as T[];
+    }
   }
   return [];
 }
 
 export function unwrapCount(payload: unknown, fallback = 0): number {
-  if (payload && typeof payload === "object" && "count" in payload) {
-    const count = (payload as { count?: number }).count;
-    if (typeof count === "number") return count;
+  if (payload && typeof payload === "object") {
+    const obj = payload as Record<string, unknown>;
+    if (typeof obj.count === "number") return obj.count;
+    if (typeof obj.total === "number") return obj.total;
+    if (obj.data && typeof obj.data === "object") {
+      const inner = obj.data as Record<string, unknown>;
+      if (typeof inner.count === "number") return inner.count;
+      if (typeof inner.total === "number") return inner.total;
+    }
   }
   return fallback;
 }
@@ -190,11 +280,7 @@ export function unwrapMessage(payload: unknown, fallback: string): string {
 export function unwrapEntity<T extends object>(payload: unknown): T | null {
   if (!payload || typeof payload !== "object") return null;
   const obj = payload as Record<string, unknown>;
-  if (
-    obj.data &&
-    typeof obj.data === "object" &&
-    !Array.isArray(obj.data)
-  ) {
+  if (obj.data && typeof obj.data === "object" && !Array.isArray(obj.data)) {
     return obj.data as T;
   }
   return payload as T;

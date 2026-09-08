@@ -10,6 +10,7 @@ import {
   PhoneField,
   FieldLabel,
   FieldError,
+  DatePicker,
 } from "@/components/ui";
 import {
   EventItem,
@@ -103,7 +104,12 @@ function LocalImageField({
             alt="Event"
             className="w-20 h-14 rounded-lg object-cover border border-[#E7E9EB]"
           />
-          <Button type="button" variant="ghost" size="sm" onClick={() => onChange(null)}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => onChange(null)}
+          >
             Remove
           </Button>
         </div>
@@ -139,7 +145,13 @@ function isValidUrl(value: string) {
   }
 }
 
-export function EventModal({ open, event, isSubmitting, onClose, onSubmit }: Props) {
+export function EventModal({
+  open,
+  event,
+  isSubmitting,
+  onClose,
+  onSubmit,
+}: Props) {
   const [form, setForm] = useState<EventPayload>(EMPTY);
   const [error, setError] = useState("");
   const isEdit = !!event;
@@ -158,7 +170,8 @@ export function EventModal({ open, event, isSubmitting, onClose, onSubmit }: Pro
 
   async function handleSubmit() {
     if (!form.name.trim()) return setError("Event name is required");
-    if (!form.description.trim()) return setError("Event description is required");
+    if (!form.description.trim())
+      return setError("Event description is required");
     if (!form.startDate) return setError("Start date is required");
     if (!form.startTime) return setError("Start time is required");
     if (!form.endDate) return setError("End date is required");
@@ -166,7 +179,8 @@ export function EventModal({ open, event, isSubmitting, onClose, onSubmit }: Pro
 
     const start = new Date(`${form.startDate}T${form.startTime}`);
     const end = new Date(`${form.endDate}T${form.endTime}`);
-    if (end < start) return setError("End date and time must be after the start");
+    if (end < start)
+      return setError("End date and time must be after the start");
 
     if (needsLink && !form.meetingLink?.trim()) {
       return setError("Meeting link is required for virtual and hybrid events");
@@ -191,9 +205,11 @@ export function EventModal({ open, event, isSubmitting, onClose, onSubmit }: Pro
       return setError("Registration must close after it opens");
     }
     if (form.price < 0) return setError("Event price cannot be negative");
-    if (!form.organizerName.trim()) return setError("Organizer name is required");
+    if (!form.organizerName.trim())
+      return setError("Organizer name is required");
     if (!form.contactEmail.trim()) return setError("Contact email is required");
-    if (!isValidEmail(form.contactEmail.trim())) return setError("Enter a valid contact email");
+    if (!isValidEmail(form.contactEmail.trim()))
+      return setError("Enter a valid contact email");
 
     const ok = await onSubmit({
       ...form,
@@ -201,9 +217,14 @@ export function EventModal({ open, event, isSubmitting, onClose, onSubmit }: Pro
       description: form.description.trim(),
       meetingLink: needsLink ? form.meetingLink?.trim() || null : null,
       location: needsLocation ? form.location?.trim() || null : null,
-      registrationOpens: form.registrationRequired ? form.registrationOpens : null,
-      registrationCloses: form.registrationRequired ? form.registrationCloses : null,
-      maxAttendees: form.maxAttendees && form.maxAttendees > 0 ? form.maxAttendees : null,
+      registrationOpens: form.registrationRequired
+        ? form.registrationOpens
+        : null,
+      registrationCloses: form.registrationRequired
+        ? form.registrationCloses
+        : null,
+      maxAttendees:
+        form.maxAttendees && form.maxAttendees > 0 ? form.maxAttendees : null,
       organizerName: form.organizerName.trim(),
       contactEmail: form.contactEmail.trim(),
       contactPhone: form.contactPhone?.trim() || null,
@@ -246,26 +267,34 @@ export function EventModal({ open, event, isSubmitting, onClose, onSubmit }: Pro
           required
           value={form.category}
           onChange={(v) => set("category", v as EventCategory)}
-          options={EVENT_CATEGORIES.map((o) => ({ label: o.label, value: o.value }))}
+          options={EVENT_CATEGORIES.map((o) => ({
+            label: o.label,
+            value: o.value,
+          }))}
         />
         <Select
           label="Event status"
           required
           value={form.status}
           onChange={(v) => set("status", v as EventStatus)}
-          options={EVENT_STATUSES.map((o) => ({ label: o.label, value: o.value }))}
+          options={EVENT_STATUSES.map((o) => ({
+            label: o.label,
+            value: o.value,
+          }))}
         />
 
         <div className="sm:col-span-2">
-          <LocalImageField value={form.image} onChange={(image) => set("image", image)} />
+          <LocalImageField
+            value={form.image}
+            onChange={(image) => set("image", image)}
+          />
         </div>
 
-        <TextField
+        <DatePicker
           label="Start date"
-          type="date"
           required
           value={form.startDate}
-          onChange={(e) => set("startDate", e.target.value)}
+          onChange={(iso) => set("startDate", iso)}
         />
         <TextField
           label="Start time"
@@ -274,12 +303,12 @@ export function EventModal({ open, event, isSubmitting, onClose, onSubmit }: Pro
           value={form.startTime}
           onChange={(e) => set("startTime", e.target.value)}
         />
-        <TextField
+        <DatePicker
           label="End date"
-          type="date"
           required
           value={form.endDate}
-          onChange={(e) => set("endDate", e.target.value)}
+          min={form.startDate || null}
+          onChange={(iso) => set("endDate", iso)}
         />
         <TextField
           label="End time"
@@ -298,19 +327,24 @@ export function EventModal({ open, event, isSubmitting, onClose, onSubmit }: Pro
             setForm((prev) => ({
               ...prev,
               format,
-              meetingLink:
-                format === "physical" ? null : prev.meetingLink,
+              meetingLink: format === "physical" ? null : prev.meetingLink,
               location: format === "virtual" ? null : prev.location,
             }));
           }}
-          options={EVENT_FORMATS.map((o) => ({ label: o.label, value: o.value }))}
+          options={EVENT_FORMATS.map((o) => ({
+            label: o.label,
+            value: o.value,
+          }))}
         />
         <Select
           label="Eligibility"
           required
           value={form.eligibility}
           onChange={(v) => set("eligibility", v as EventEligibility)}
-          options={EVENT_ELIGIBILITY.map((o) => ({ label: o.label, value: o.value }))}
+          options={EVENT_ELIGIBILITY.map((o) => ({
+            label: o.label,
+            value: o.value,
+          }))}
         />
 
         {needsLink && (
@@ -366,19 +400,19 @@ export function EventModal({ open, event, isSubmitting, onClose, onSubmit }: Pro
 
         {form.registrationRequired && (
           <>
-            <TextField
+            <DatePicker
               label="Registration opens"
-              type="date"
               required
-              value={form.registrationOpens ?? ""}
-              onChange={(e) => set("registrationOpens", e.target.value || null)}
+              value={form.registrationOpens}
+              max={form.registrationCloses || null}
+              onChange={(iso) => set("registrationOpens", iso)}
             />
-            <TextField
+            <DatePicker
               label="Registration closes"
-              type="date"
               required
-              value={form.registrationCloses ?? ""}
-              onChange={(e) => set("registrationCloses", e.target.value || null)}
+              value={form.registrationCloses}
+              min={form.registrationOpens || null}
+              onChange={(iso) => set("registrationCloses", iso)}
             />
           </>
         )}
@@ -397,7 +431,10 @@ export function EventModal({ open, event, isSubmitting, onClose, onSubmit }: Pro
           required
           value={form.currency}
           onChange={(v) => set("currency", v as EventCurrency)}
-          options={EVENT_CURRENCIES.map((o) => ({ label: o.label, value: o.value }))}
+          options={EVENT_CURRENCIES.map((o) => ({
+            label: o.label,
+            value: o.value,
+          }))}
         />
 
         <TextField
