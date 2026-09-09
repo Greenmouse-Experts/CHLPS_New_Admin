@@ -70,6 +70,14 @@ const NAV_ITEMS: NavItem[] = [
     href: "/membership",
     icon: <Personalcard size={16} color="currentColor" />,
     roles: ["admin"],
+    children: [
+      { label: "All Memberships", href: "/membership", roles: ["admin"] },
+      {
+        label: "Categories / Types",
+        href: "/membership/types",
+        roles: ["admin"],
+      },
+    ],
   },
   {
     label: "Events",

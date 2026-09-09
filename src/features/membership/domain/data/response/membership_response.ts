@@ -42,6 +42,20 @@ export interface MembershipTypeRef {
   slug?: string;
 }
 
+export interface MembershipTypeItem {
+  id: string;
+  name: string;
+  slug?: string;
+  isPublished?: boolean;
+  createdDate?: string;
+  updatedDate?: string;
+}
+
+export interface CreateMembershipTypePayload {
+  name: string;
+  isPublished?: boolean;
+}
+
 export interface Membership {
   id?: string;
   name: string;
@@ -119,6 +133,10 @@ export type MembershipsApiResponse = ApiResponse<{
 }>;
 export type MembershipApiResponse = ApiResponse<Membership>;
 export type MembershipStatsApiResponse = ApiResponse<MembershipStats>;
+export type MembershipTypesApiResponse = ApiResponse<{
+  items: MembershipTypeItem[];
+  count: number;
+}>;
 
 export const MEMBERSHIP_CURRENCIES: {
   value: MembershipCurrency;

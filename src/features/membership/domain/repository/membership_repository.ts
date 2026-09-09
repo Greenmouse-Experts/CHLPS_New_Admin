@@ -8,6 +8,7 @@ import {
   unwrapMessage,
 } from "@/lib/tokens";
 import {
+  CreateMembershipTypePayload,
   Membership,
   MembershipApiResponse,
   MembershipsApiResponse,
@@ -15,6 +16,8 @@ import {
   MembershipStatus,
   MembershipStats,
   MembershipStatsApiResponse,
+  MembershipTypeItem,
+  MembershipTypesApiResponse,
 } from "../data/response/membership_response";
 
 export class MembershipRepository {
@@ -113,6 +116,54 @@ export class MembershipRepository {
     return {
       success: res.success,
       message: unwrapMessage(res.data, res.message || "Deleted"),
+    };
+  }
+
+  // --- Membership Types (Categories) ---
+  public async listTypes(): Promise<MembershipTypesApiResponse> {
+    const res = await this._api.getData<unknown>(ApiUrls.membershipTypes);
+    if (res.success) {
+      const items = unwrapList<MembershipTypeItem>(res.data);
+      return ok({
+        items,
+        count: unwrapCount(res.data, items.length),
+      });
+    }
+    return fail(res.message || "Failed to fetch membership types");
+  }
+
+  public async createType(payload: CreateMembershipTypePayload) {
+    const res = await this._api.postData<
+      CreateMembershipTypePayload,
+      { message?: string }
+    >(ApiUrls.createMembershipType, payload);
+    return {
+      success: res.success,
+      message: unwrapMessage(res.data, res.message || "Created successfully"),
+    };
+  }
+
+  public async updateType(
+    id: string,
+    payload: Partial<CreateMembershipTypePayload>,
+  ) {
+    const res = await this._api.patchData<typeof payload, { message?: string }>(
+      ApiUrls.membershipTypeById(id),
+      payload,
+    );
+    return {
+      success: res.success,
+      message: unwrapMessage(res.data, res.message || "Updated successfully"),
+    };
+  }
+
+  public async deleteType(id: string) {
+    const res = await this._api.deleteData<{ message?: string }>(
+      ApiUrls.membershipTypeById(id),
+    );
+    return {
+      success: res.success,
+      message: unwrapMessage(res.data, res.message || "Deleted successfully"),
     };
   }
 }
