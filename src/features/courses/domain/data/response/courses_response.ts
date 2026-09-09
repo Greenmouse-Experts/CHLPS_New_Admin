@@ -1,13 +1,36 @@
 import { ApiResponse } from "@/lib/network/entity/api_response";
 
 export interface CourseOutcome {
+  id?: string;
   description: string;
   order: number;
+  createdDate?: string;
+  updatedDate?: string;
+  deletedDate?: string | null;
+}
+
+export interface CourseInstructor {
+  id?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  isActive?: boolean;
+  isSuspended?: boolean;
+  role?: string;
+  picture?: string;
+  address?: string | null;
+  facebookUrl?: string | null;
+  twitterUrl?: string | null;
+  linkedinUrl?: string | null;
+  bio?: string | null;
+  createdDate?: string;
 }
 
 export interface Course {
   id: string;
   title: string;
+  slug?: string;
   shortDesc?: string;
   fullDesc?: string;
   price?: number;
@@ -17,13 +40,9 @@ export interface Course {
   coverImage?: string;
   createdDate?: string;
   updatedDate?: string;
-  program?: { id: string; title: string };
-  instructor?: {
-    id?: string;
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-  };
+  program?: { id: string; title: string } | null;
+  instructor?: CourseInstructor | null;
+  contents?: CourseContent[];
   courseOutcomes?: CourseOutcome[];
 }
 
@@ -103,9 +122,18 @@ export interface CreateQuestionPayload {
   isPublished: boolean;
 }
 
-export type CoursesApiResponse = ApiResponse<{ items: Course[]; count: number }>;
+export type CoursesApiResponse = ApiResponse<{
+  items: Course[];
+  count: number;
+}>;
 export type CourseApiResponse = ApiResponse<Course>;
-export type ContentsApiResponse = ApiResponse<{ items: CourseContent[]; count: number }>;
+export type ContentsApiResponse = ApiResponse<{
+  items: CourseContent[];
+  count: number;
+}>;
 export type SubContentsApiResponse = ApiResponse<CourseSubContent[]>;
-export type QuestionsApiResponse = ApiResponse<{ items: AssessmentQuestion[]; count: number }>;
+export type QuestionsApiResponse = ApiResponse<{
+  items: AssessmentQuestion[];
+  count: number;
+}>;
 export type ReviewsApiResponse = ApiResponse<ReviewsData>;
