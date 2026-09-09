@@ -9,6 +9,7 @@ import {
   Checkbox,
   FieldLabel,
   FieldError,
+  ImageUpload,
 } from "@/components/ui";
 import SimpleInput from "@/components/inputs/SimpleInput";
 import SimpleTextArea from "@/components/inputs/SimpleTextArea";
@@ -38,12 +39,12 @@ interface FormValues {
   type: string;
   category?: string;
   eligibilityCriteria: { value: string }[];
-  price: number | string;
+  price: string | number;
   currency: MembershipCurrency;
   duration: string;
   autoRenewal: boolean;
-  renewalPrice?: number | string | null;
-  renewalPeriod?: string | null;
+  renewalPrice?: string | number;
+  renewalPeriod?: string;
   benefits: { value: string }[];
   requiredDocuments: string[];
   image?: string | null;
@@ -51,59 +52,62 @@ interface FormValues {
 }
 
 const COMMON_DURATIONS = [
+  { value: "1 Month", label: "1 Month" },
+  { value: "3 Months", label: "3 Months" },
+  { value: "6 Months", label: "6 Months" },
   { value: "1 Year", label: "1 Year" },
   { value: "2 Years", label: "2 Years" },
-  { value: "Monthly", label: "Monthly" },
-  { value: "Quarterly", label: "Quarterly" },
-  { value: "Annually", label: "Annually" },
   { value: "Lifetime", label: "Lifetime" },
 ];
 
 const COMMON_RENEWAL_PERIODS = [
-  { value: "Annually", label: "Annually" },
   { value: "Monthly", label: "Monthly" },
   { value: "Quarterly", label: "Quarterly" },
-  { value: "1 Year", label: "1 Year" },
+  { value: "Bi-annually", label: "Bi-annually" },
+  { value: "Annually", label: "Annually" },
 ];
 
 const REQUIRED_DOCUMENTS_LIST = [
-  "National ID",
-  "Passport",
-  "Driver's Licence",
-  "Certificate",
-  "Other",
-] as const;
+  "Government ID / Passport",
+  "Proof of Address",
+  "Professional License / Certificate",
+  "Curriculum Vitae (CV)",
+  "Recommendation Letter",
+];
 
-function getFormDefaults(item?: Membership | null): FormValues {
+function getFormDefaults(membership?: Membership | null): FormValues {
   const typeId =
-    typeof item?.type === "object" && item?.type !== null
-      ? item.type.id
-      : typeof item?.type === "string"
-        ? item.type
-        : "";
+    typeof membership?.type === "string"
+      ? membership.type
+      : (membership?.type?.id ??
+        (membership as unknown as { typeId?: string })?.typeId ??
+        "");
 
   return {
-    name: item?.name ?? "",
-    description: item?.description ?? "",
+    name: membership?.name ?? "",
+    description: membership?.description ?? "",
     type: typeId,
-    category: typeId,
-    eligibilityCriteria:
-      item?.eligibilityCriteria && item.eligibilityCriteria.length > 0
-        ? item.eligibilityCriteria.map((val) => ({ value: val }))
-        : [{ value: "" }],
-    price: item?.price != null ? item.price : "",
-    currency: (item?.currency as MembershipCurrency) || "CAD",
-    duration: item?.duration || "1 Year",
-    autoRenewal: Boolean(item?.autoRenewal),
-    renewalPrice: item?.renewalPrice != null ? item.renewalPrice : "",
-    renewalPeriod: item?.renewalPeriod || "Annually",
-    benefits:
-      item?.benefits && item.benefits.length > 0
-        ? item.benefits.map((val) => ({ value: val }))
-        : [{ value: "" }],
-    requiredDocuments: (item?.requiredDocuments as string[]) || [],
-    image: item?.image || null,
-    status: (item?.status as MembershipStatus) || "draft",
+    category: membership?.category ?? "",
+    eligibilityCriteria: (membership?.eligibilityCriteria?.length
+      ? membership.eligibilityCriteria
+      : [""]
+    ).map((v) => ({ value: v })),
+    price: membership?.price !== undefined ? String(membership.price) : "",
+    currency: membership?.currency ?? "CAD",
+    duration: membership?.duration ?? "1 Year",
+    autoRenewal: Boolean(membership?.autoRenewal),
+    renewalPrice:
+      membership?.renewalPrice !== undefined &&
+      membership?.renewalPrice !== null
+        ? String(membership.renewalPrice)
+        : "",
+    renewalPeriod: membership?.renewalPeriod ?? "Annually",
+    benefits: (membership?.benefits?.length ? membership.benefits : [""]).map(
+      (v) => ({ value: v }),
+    ),
+    requiredDocuments: membership?.requiredDocuments ?? [],
+    image: membership?.image ?? null,
+    status: membership?.status ?? "draft",
   };
 }
 
@@ -114,7 +118,7 @@ export function MembershipModal({
   onClose,
   onSubmit,
 }: Props) {
-  const isEdit = !!membership;
+  const isEdit = Boolean(membership);
 
   const methods = useForm<FormValues>({
     defaultValues: getFormDefaults(membership),
@@ -133,12 +137,12 @@ export function MembershipModal({
     formState: { errors },
   } = methods;
 
-  const currentDuration = watch("duration") || "1 Year";
+  const currentDuration = watch("duration");
   const autoRenewal = watch("autoRenewal");
   const watchRequiredDocs = watch("requiredDocuments") || [];
   const watchImage = watch("image");
-  const isLifetime = currentDuration.toLowerCase().includes("lifetime");
-  const showRenewal = autoRenewal && !isLifetime;
+  const isLifetime = currentDuration === "Lifetime";
+  const showRenewal = !isLifetime && autoRenewal;
 
   const {
     fields: eligibilityFields,
@@ -164,124 +168,128 @@ export function MembershipModal({
     }
   }, [open, membership, reset]);
 
-  const onFormSubmit = async (data: FormValues) => {
-    const selectedType = (data.type || "").trim();
-    if (!selectedType || selectedType === "null") {
+  const onFormSubmit = async (values: FormValues) => {
+    const selectedType = values.type;
+    if (!selectedType) {
       setError("type", {
-        type: "manual",
-        message: "Please select a membership type",
+        type: "required",
+        message: "Membership type is required",
       });
       return;
     }
 
-    const eligibility = data.eligibilityCriteria
+    const eligibility = values.eligibilityCriteria
       .map((c) => c.value.trim())
       .filter(Boolean);
-
     if (eligibility.length === 0) {
       setError("eligibilityCriteria", {
-        type: "manual",
+        type: "required",
         message: "Add at least one eligibility criterion",
       });
       return;
     }
 
-    const benefits = data.benefits.map((b) => b.value.trim()).filter(Boolean);
-
+    const benefits = values.benefits.map((b) => b.value.trim()).filter(Boolean);
     if (benefits.length === 0) {
       setError("benefits", {
-        type: "manual",
+        type: "required",
         message: "Add at least one benefit",
       });
       return;
     }
 
-    const priceNum = Number(data.price);
-    if (isNaN(priceNum) || priceNum <= 0) {
+    const priceNum = Number(values.price);
+    if (Number.isNaN(priceNum) || priceNum < 0) {
       setError("price", {
-        type: "manual",
-        message: "Valid price greater than 0 is required",
+        type: "validate",
+        message: "Enter a valid price (>= 0)",
       });
       return;
     }
 
-    if (showRenewal) {
-      const renewalNum = Number(data.renewalPrice);
-      if (isNaN(renewalNum) || renewalNum <= 0) {
+    let renewalNum: number | null = null;
+    if (
+      showRenewal &&
+      values.renewalPrice !== "" &&
+      values.renewalPrice !== undefined
+    ) {
+      renewalNum = Number(values.renewalPrice);
+      if (Number.isNaN(renewalNum) || renewalNum < 0) {
         setError("renewalPrice", {
-          type: "manual",
-          message: "Renewal price is required when auto-renewal is enabled",
+          type: "validate",
+          message: "Enter a valid renewal price (>= 0)",
         });
         return;
       }
     }
 
     const payload: MembershipPayload = {
-      name: data.name.trim(),
-      description: data.description.trim(),
+      name: values.name.trim(),
+      description: values.description.trim(),
       type: selectedType,
-      category: selectedType,
+      category: values.category?.trim() || undefined,
       eligibilityCriteria: eligibility,
       price: priceNum,
-      currency: data.currency,
-      duration: data.duration,
-      autoRenewal: isLifetime ? false : Boolean(data.autoRenewal),
-      renewalPrice:
-        showRenewal && data.renewalPrice != null
-          ? Number(data.renewalPrice)
-          : null,
-      renewalPeriod: showRenewal ? data.renewalPeriod || "Annually" : null,
+      currency: values.currency,
+      duration: values.duration,
+      autoRenewal: isLifetime ? false : values.autoRenewal,
+      renewalPrice: isLifetime ? null : values.autoRenewal ? renewalNum : null,
+      renewalPeriod:
+        isLifetime || !values.autoRenewal ? null : values.renewalPeriod,
       benefits,
-      requiredDocuments: data.requiredDocuments || [],
-      status: data.status,
-      image: data.image || null,
+      requiredDocuments: values.requiredDocuments,
+      status: values.status,
+      image: values.image || null,
     };
 
     const ok = await onSubmit(payload);
-    if (ok) {
-      onClose();
-    }
+    if (ok) onClose();
   };
 
   return (
     <Modal
       open={open}
       onClose={onClose}
-      title={isEdit ? "Edit Membership" : "Create Membership"}
-      size="full"
-      scrollable
+      title={isEdit ? "Edit Membership Plan" : "Create Membership Plan"}
+      size="lg"
     >
       <FormProvider {...methods}>
-        <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
-          <div className="grid sm:grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
               <SimpleInput
-                label="Membership name"
-                placeholder="e.g. Professional Membership"
+                label="Membership Plan Name"
+                placeholder="e.g. Professional Associate Membership"
+                required
                 {...register("name", {
                   required: "Membership name is required",
+                  minLength: {
+                    value: 3,
+                    message: "Must be at least 3 characters",
+                  },
                 })}
               />
             </div>
 
             <div className="sm:col-span-2">
               <SimpleTextArea
-                label="Membership description"
-                placeholder="Description of membership"
+                label="Description"
+                placeholder="Describe what this membership offers, who it's for..."
                 rows={3}
+                required
                 {...register("description", {
-                  required: "Membership description is required",
+                  required: "Description is required",
                 })}
               />
             </div>
 
             <div>
               <SimpleSelect<{ id: string; name: string }>
+                label="Membership Type / Category"
+                placeholder="Select category type"
                 route={ApiUrls.membershipTypes}
                 name="type"
-                label="Membership type"
-                placeholder="Select a membership type"
-                autoSelectFirst={true}
+                autoSelectFirst={false}
                 onChange={(val) => {
                   if (val) clearErrors("type");
                 }}
@@ -291,84 +299,130 @@ export function MembershipModal({
                   </option>
                 )}
               />
-            </div>
-
-            <div>
-              <LocalSelect label="Membership status" {...register("status")}>
-                {MEMBERSHIP_STATUSES.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </LocalSelect>
-            </div>
-
-            <div className="sm:col-span-2 space-y-2">
-              <div className="fieldset-label font-semibold">
-                <span className="text-sm">
-                  Eligibility criteria <span className="text-error">*</span>
-                </span>
-              </div>
-              <div className="space-y-2">
-                {eligibilityFields.map((field, index) => (
-                  <div key={field.id} className="flex gap-2 items-center">
-                    <div className="flex-1">
-                      <SimpleInput
-                        placeholder="e.g. Must hold a professional certificate"
-                        {...register(
-                          `eligibilityCriteria.${index}.value` as const,
-                          {
-                            required: "Criterion cannot be empty",
-                          },
-                        )}
-                      />
-                    </div>
-                    {eligibilityFields.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="shrink-0 text-error hover:bg-error/10"
-                        onClick={() => removeEligibility(index)}
-                      >
-                        Remove
-                      </Button>
-                    )}
-                  </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => appendEligibility({ value: "" })}
-                >
-                  + Add criterion
-                </Button>
-                {errors.eligibilityCriteria?.message && (
-                  <FieldError>
-                    {String(errors.eligibilityCriteria.message)}
-                  </FieldError>
-                )}
-              </div>
+              {errors.type && <FieldError>{errors.type.message}</FieldError>}
             </div>
 
             <div>
               <SimpleInput
-                label="Membership price"
+                label="Category / Sub-tag (Optional)"
+                placeholder="e.g. Individual, Corporate"
+                {...register("category")}
+              />
+            </div>
+
+            <div className="sm:col-span-2 space-y-2">
+              <div className="flex items-center justify-between">
+                <FieldLabel required>Eligibility Criteria</FieldLabel>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    appendEligibility({ value: "" });
+                    clearErrors("eligibilityCriteria");
+                  }}
+                >
+                  + Add criterion
+                </Button>
+              </div>
+              {eligibilityFields.map((field, idx) => (
+                <div key={field.id} className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <SimpleInput
+                      placeholder={`Criterion #${idx + 1}`}
+                      {...register(`eligibilityCriteria.${idx}.value`, {
+                        required:
+                          idx === 0
+                            ? "At least one criterion is required"
+                            : false,
+                      })}
+                    />
+                  </div>
+                  {eligibilityFields.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeEligibility(idx)}
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </div>
+              ))}
+              {errors.eligibilityCriteria && (
+                <FieldError>{errors.eligibilityCriteria.message}</FieldError>
+              )}
+            </div>
+
+            <div className="sm:col-span-2 space-y-2">
+              <div className="flex items-center justify-between">
+                <FieldLabel required>Benefits</FieldLabel>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    appendBenefit({ value: "" });
+                    clearErrors("benefits");
+                  }}
+                >
+                  + Add benefit
+                </Button>
+              </div>
+              {benefitFields.map((field, idx) => (
+                <div key={field.id} className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <SimpleInput
+                      placeholder={`Benefit #${idx + 1}`}
+                      {...register(`benefits.${idx}.value`, {
+                        required:
+                          idx === 0
+                            ? "At least one benefit is required"
+                            : false,
+                      })}
+                    />
+                  </div>
+                  {benefitFields.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeBenefit(idx)}
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </div>
+              ))}
+              {errors.benefits && (
+                <FieldError>{errors.benefits.message}</FieldError>
+              )}
+            </div>
+
+            <div>
+              <SimpleInput
+                label="Price"
                 type="number"
-                min={0}
-                placeholder="e.g. 50000"
+                step="0.01"
+                placeholder="0.00"
+                required
                 {...register("price", {
-                  required: "Membership price is required",
+                  required: "Price is required",
+                  min: { value: 0, message: "Price cannot be negative" },
                 })}
               />
             </div>
 
             <div>
-              <LocalSelect label="Currency" {...register("currency")}>
-                {MEMBERSHIP_CURRENCIES.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
+              <LocalSelect
+                label="Currency"
+                required
+                {...register("currency", { required: true })}
+              >
+                {MEMBERSHIP_CURRENCIES.map((curr) => (
+                  <option key={curr.value} value={curr.value}>
+                    {curr.label}
                   </option>
                 ))}
               </LocalSelect>
@@ -376,67 +430,86 @@ export function MembershipModal({
 
             <div>
               <LocalSelect
-                label="Membership duration"
+                label="Duration"
+                required
                 {...register("duration", {
+                  required: "Duration is required",
                   onChange: (e) => {
                     const dur = e.target.value;
-                    if (dur.toLowerCase().includes("lifetime")) {
-                      setValue("autoRenewal", false);
-                      setValue("renewalPrice", null);
+                    if (dur === "Lifetime") {
+                      setValue("autoRenewal", false, { shouldDirty: true });
                     }
                   },
                 })}
               >
-                {COMMON_DURATIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
+                {COMMON_DURATIONS.map((dur) => (
+                  <option key={dur.value} value={dur.value}>
+                    {dur.label}
                   </option>
                 ))}
               </LocalSelect>
             </div>
 
-            <div className="flex items-center pt-6">
-              <Toggle
-                checked={autoRenewal && !isLifetime}
-                disabled={isLifetime}
-                onChange={(checked) => {
-                  setValue("autoRenewal", checked, { shouldDirty: true });
-                  if (checked && !methods.getValues("renewalPrice")) {
-                    setValue("renewalPrice", methods.getValues("price"), {
-                      shouldDirty: true,
-                    });
-                  }
-                }}
-                label="Auto-renewal"
-                hint={
-                  isLifetime
-                    ? "Not available for lifetime memberships"
-                    : autoRenewal
-                      ? "Enabled"
-                      : "Disabled"
-                }
-              />
+            <div>
+              <LocalSelect
+                label="Status"
+                required
+                {...register("status", { required: true })}
+              >
+                {MEMBERSHIP_STATUSES.map((st) => (
+                  <option key={st.value} value={st.value}>
+                    {st.label}
+                  </option>
+                ))}
+              </LocalSelect>
             </div>
+
+            {!isLifetime && (
+              <div className="sm:col-span-2 pt-1">
+                <div className="flex items-center justify-between p-3 rounded-lg border border-[#E7E9EB] bg-[#F7F7F7]/60">
+                  <div>
+                    <p className="text-sm font-medium text-black">
+                      Auto-Renewal
+                    </p>
+                    <p className="text-xs text-[#717171]">
+                      Enable recurring renewal billing for this membership.
+                    </p>
+                  </div>
+                  <Toggle
+                    checked={autoRenewal}
+                    onChange={(checked) =>
+                      setValue("autoRenewal", checked, { shouldDirty: true })
+                    }
+                  />
+                </div>
+              </div>
+            )}
 
             {showRenewal && (
               <>
                 <div>
                   <SimpleInput
-                    label="Renewal price"
+                    label="Renewal Price"
                     type="number"
-                    min={0}
-                    placeholder="e.g. 45000"
-                    {...register("renewalPrice")}
+                    step="0.01"
+                    placeholder="Same as base price if blank"
+                    {...register("renewalPrice", {
+                      min: {
+                        value: 0,
+                        message: "Renewal price cannot be negative",
+                      },
+                    })}
                   />
                 </div>
+
                 <div>
                   <LocalSelect
-                    label="Renewal period"
+                    label="Renewal Period"
                     {...register("renewalPeriod")}
                   >
-                    {COMMON_RENEWAL_PERIODS.map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {o.label}
+                    {COMMON_RENEWAL_PERIODS.map((period) => (
+                      <option key={period.value} value={period.value}>
+                        {period.label}
                       </option>
                     ))}
                   </LocalSelect>
@@ -444,53 +517,12 @@ export function MembershipModal({
               </>
             )}
 
-            <div className="sm:col-span-2 space-y-2">
-              <div className="fieldset-label font-semibold">
-                <span className="text-sm">
-                  Benefits <span className="text-error">*</span>
-                </span>
-              </div>
-              <div className="space-y-2">
-                {benefitFields.map((field, index) => (
-                  <div key={field.id} className="flex gap-2 items-center">
-                    <div className="flex-1">
-                      <SimpleInput
-                        placeholder="e.g. Access to resources"
-                        {...register(`benefits.${index}.value` as const, {
-                          required: "Benefit cannot be empty",
-                        })}
-                      />
-                    </div>
-                    {benefitFields.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="shrink-0 text-error hover:bg-error/10"
-                        onClick={() => removeBenefit(index)}
-                      >
-                        Remove
-                      </Button>
-                    )}
-                  </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => appendBenefit({ value: "" })}
-                >
-                  + Add benefit
-                </Button>
-                {errors.benefits?.message && (
-                  <FieldError>{String(errors.benefits.message)}</FieldError>
-                )}
-              </div>
-            </div>
-
-            <div className="sm:col-span-2">
-              <FieldLabel>Required documents</FieldLabel>
-              <div className="grid sm:grid-cols-2 gap-2 rounded-lg border border-[#E7E9EB] p-3">
+            <div className="sm:col-span-2 space-y-2 pt-1">
+              <FieldLabel>Required Documents for Applicants</FieldLabel>
+              <p className="text-xs text-[#717171]">
+                Check all documents applicants must provide before approval.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                 {REQUIRED_DOCUMENTS_LIST.map((doc) => {
                   const checked = watchRequiredDocs.includes(doc);
                   return (
@@ -512,46 +544,17 @@ export function MembershipModal({
               </div>
             </div>
 
-            <div className="sm:col-span-2 space-y-2">
-              <FieldLabel>Membership image</FieldLabel>
-              {watchImage ? (
-                <div className="flex items-center gap-3 mb-2">
-                  <img
-                    src={watchImage}
-                    alt="Membership"
-                    className="w-20 h-14 rounded-lg object-cover border border-[#E7E9EB]"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                      setValue("image", null, { shouldDirty: true })
-                    }
-                  >
-                    Remove
-                  </Button>
-                </div>
-              ) : null}
-              <input
-                type="file"
-                accept="image/*"
-                className="text-sm text-[#717171]"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  const reader = new FileReader();
-                  reader.onload = () =>
-                    setValue("image", String(reader.result), {
-                      shouldDirty: true,
-                    });
-                  reader.readAsDataURL(file);
-                  e.target.value = "";
-                }}
+            {/* Cloudinary Image Upload */}
+            <div className="sm:col-span-2">
+              <ImageUpload
+                label="Membership Image / Banner"
+                value={watchImage || null}
+                onChange={(url) =>
+                  setValue("image", url, { shouldDirty: true })
+                }
+                folder="chlps_memberships"
+                helperText="Upload banner or icon image for this membership tier to Cloudinary."
               />
-              <p className="mt-1 text-xs text-[#717171]">
-                Optional banner or icon.
-              </p>
             </div>
           </div>
 
@@ -568,3 +571,5 @@ export function MembershipModal({
     </Modal>
   );
 }
+
+export default MembershipModal;

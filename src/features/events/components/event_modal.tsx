@@ -7,9 +7,9 @@ import {
   Button,
   Toggle,
   PhoneField,
-  FieldLabel,
   FieldError,
   DatePicker,
+  ImageUpload,
 } from "@/components/ui";
 import SimpleInput from "@/components/inputs/SimpleInput";
 import SimpleTextArea from "@/components/inputs/SimpleTextArea";
@@ -125,51 +125,6 @@ function getFormDefaults(item?: EventItem | null): FormValues {
     status: normalizeStatus(item?.status),
     image: item?.image ?? null,
   };
-}
-
-function LocalImageField({
-  value,
-  onChange,
-}: {
-  value: string | null;
-  onChange: (url: string | null) => void;
-}) {
-  return (
-    <div className="space-y-2">
-      <FieldLabel>Event image</FieldLabel>
-      {value ? (
-        <div className="flex items-center gap-3 mb-2">
-          <img
-            src={value}
-            alt="Event"
-            className="w-20 h-14 rounded-lg object-cover border border-[#E7E9EB]"
-          />
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => onChange(null)}
-          >
-            Remove
-          </Button>
-        </div>
-      ) : null}
-      <input
-        type="file"
-        accept="image/*"
-        className="text-sm text-[#717171]"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (!file) return;
-          const reader = new FileReader();
-          reader.onload = () => onChange(String(reader.result));
-          reader.readAsDataURL(file);
-          e.target.value = "";
-        }}
-      />
-      <p className="mt-1 text-xs text-[#717171]">Optional banner or image.</p>
-    </div>
-  );
 }
 
 function isValidUrl(value: string) {
@@ -397,12 +352,16 @@ export function EventModal({
               </LocalSelect>
             </div>
 
+            {/* Cloudinary Image Upload */}
             <div className="sm:col-span-2">
-              <LocalImageField
+              <ImageUpload
+                label="Event Image / Banner"
                 value={watchImage || null}
                 onChange={(img) =>
                   setValue("image", img, { shouldDirty: true })
                 }
+                folder="chlps_events"
+                helperText="Upload event promotional banner or poster to Cloudinary."
               />
             </div>
 
@@ -468,16 +427,7 @@ export function EventModal({
             </div>
 
             <div>
-              <LocalSelect
-                label="Event format"
-                {...register("format", {
-                  onChange: (e) => {
-                    const selected = (e.target.value || "").toLowerCase();
-                    if (selected === "physical") setValue("meetingLink", "");
-                    if (selected === "virtual") setValue("location", "");
-                  },
-                })}
-              >
+              <LocalSelect label="Event format" {...register("format")}>
                 {EVENT_FORMATS.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
@@ -487,7 +437,10 @@ export function EventModal({
             </div>
 
             <div>
-              <LocalSelect label="Eligibility" {...register("eligibility")}>
+              <LocalSelect
+                label="Target eligibility"
+                {...register("eligibility")}
+              >
                 {EVENT_ELIGIBILITY.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
@@ -670,3 +623,5 @@ export function EventModal({
     </Modal>
   );
 }
+
+export default EventModal;

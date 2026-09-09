@@ -72,6 +72,11 @@ export type {
 export { CloudinaryUpload } from "./CloudinaryUpload";
 export type {} from "./CloudinaryUpload";
 
+export { ImageUpload } from "./ImageUpload";
+export type { ImageUploadProps } from "./ImageUpload";
+export { useImageUpload, useCloudinaryUpload } from "@/hooks/useImageUpload";
+export type { UseImageUploadOptions } from "@/hooks/useImageUpload";
+
 export { DatePicker } from "./date_picker";
 export type { DatePickerProps } from "./date_picker";
 
