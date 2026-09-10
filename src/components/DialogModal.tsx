@@ -12,6 +12,7 @@ interface ModalProps extends PropsWithChildren {
   actions?: any;
   actionName?: string;
   title?: string;
+  onClose?: () => void;
 }
 
 export interface ModalHandle {
@@ -20,7 +21,7 @@ export interface ModalHandle {
 }
 
 const Modal = forwardRef<ModalHandle, ModalProps>(
-  ({ children, actions, actionName: _actionName, title }, ref) => {
+  ({ children, actions, actionName: _actionName, title, onClose }, ref) => {
     const modalRef = useRef<HTMLDialogElement>(null);
     // Track open state so children unmount on close and remount fresh on every
     // open — prevents stale local state / cached data lingering across reopens.
@@ -40,10 +41,13 @@ const Modal = forwardRef<ModalHandle, ModalProps>(
     useEffect(() => {
       const dialog = modalRef.current;
       if (!dialog) return;
-      const handleClose = () => setIsOpen(false);
+      const handleClose = () => {
+        setIsOpen(false);
+        onClose?.();
+      };
       dialog.addEventListener("close", handleClose);
       return () => dialog.removeEventListener("close", handleClose);
-    }, []);
+    }, [onClose]);
 
     return (
       <dialog ref={modalRef} className="modal modal-middle sm:modal-middle">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { DashboardLayout } from "@/components";
@@ -18,13 +18,20 @@ import {
 import PageLoader from "@/components/PageLoader";
 import { RootState } from "@/lib/store/store";
 import CoursesRepository from "../domain/repository/courses_repository";
+import ProgramsRepository from "@/features/programs/domain/repository/programs_repository";
+import { Program } from "@/features/programs/domain/data/response/programs_response";
 import UploadRepository from "@/features/uploads/domain/repository/upload_repository";
 import {
   Course,
   CourseContent,
   CourseReview,
   CourseSubContent,
+  CreateCoursePayload,
 } from "../domain/data/response/courses_response";
+import {
+  EditCourseModal,
+  EditCourseModalHandle,
+} from "../components/edit_course_modal";
 import { formatDate } from "@/utils/helper/formate_date";
 import { formatCurrency } from "@/utils/helper/format_num";
 import { getAvatarColor } from "@/utils/avatar.colors";
@@ -36,6 +43,7 @@ import {
   Calendar,
   Call,
   DocumentText,
+  Edit2,
   Eye,
   Global,
   LampCharge,
@@ -57,6 +65,51 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
   const isAdmin = role === "admin";
   const repo = useMemo(() => new CoursesRepository(), []);
   const uploads = useMemo(() => new UploadRepository(), []);
+  const programsRepo = useMemo(() => new ProgramsRepository(), []);
+  const [programs, setPrograms] = useState<Program[]>([]);
+  const editModalRef = useRef<EditCourseModalHandle>(null);
+
+  useEffect(() => {
+    programsRepo.list(isAdmin).then((res) => {
+      if (res.success && res.data) setPrograms(res.data);
+    });
+  }, [isAdmin, programsRepo]);
+
+  const handleUpdateCourse = async (
+    id: string,
+    payload: Partial<CreateCoursePayload>,
+    file?: File | null,
+  ) => {
+    try {
+      setActionBusy(true);
+      let coverImage = payload.coverImage;
+      if (file) {
+        const up = await uploads.upload("image", file);
+        if (!up.success || !up.url) {
+          toast(up.message || "Failed to upload cover image", "danger");
+          return false;
+        }
+        coverImage = up.url;
+      }
+      const res = await repo.update(
+        id,
+        {
+          ...payload,
+          ...(coverImage ? { coverImage } : {}),
+        },
+        isAdmin,
+      );
+      if (res.success) {
+        toast(res.message || "Course updated successfully", "success");
+        load();
+        return true;
+      }
+      toast(res.message || "Failed to update course", "danger");
+      return false;
+    } finally {
+      setActionBusy(false);
+    }
+  };
 
   const [activeTab, setActiveTab] = useState("overview");
   const [course, setCourse] = useState<Course | null>(null);
@@ -304,6 +357,14 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
 
           {course && (
             <div className="flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                leftIcon={<Edit2 size={14} color="currentColor" />}
+                onClick={() => editModalRef.current?.open(course)}
+              >
+                Edit Course
+              </Button>
               <Button
                 size="sm"
                 variant={course.isPublished ? "outline" : "primary"}
@@ -1234,6 +1295,14 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
             }
           }
         }}
+      />
+
+      <EditCourseModal
+        ref={editModalRef}
+        programs={programs}
+        isSubmitting={actionBusy}
+        course={course}
+        onSubmit={handleUpdateCourse}
       />
     </DashboardLayout>
   );

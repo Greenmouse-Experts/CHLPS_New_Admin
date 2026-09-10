@@ -13,10 +13,14 @@ import {
 import CustomTable, { columnType } from "@/components/tables/CustomTable";
 import { Actions } from "@/components/tables/pop-up";
 import { ModalHandle } from "@/components/DialogModal";
-import { AddCircle, SearchNormal1 } from "iconsax-react";
+import { AddCircle, Edit2, SearchNormal1 } from "iconsax-react";
 import { useCourses } from "../domain/data/hooks/courses_hook";
 import { Course } from "../domain/data/response/courses_response";
 import { AddCourseModal } from "../components/add_course_modal";
+import {
+  EditCourseModal,
+  EditCourseModalHandle,
+} from "../components/edit_course_modal";
 import { formatDate } from "@/utils/helper/formate_date";
 import { formatCurrency } from "@/utils/helper/format_num";
 
@@ -36,12 +40,15 @@ export default function CoursesPage() {
     applyFilters,
     handlePageChange,
     createCourse,
+    updateCourse,
     publish,
     feature,
     remove,
   } = useCourses();
 
   const addModalRef = useRef<ModalHandle>(null);
+  const editModalRef = useRef<EditCourseModalHandle>(null);
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [confirm, setConfirm] = useState<{ id: string; type: string } | null>(
     null,
   );
@@ -88,21 +95,6 @@ export default function CoursesPage() {
           </span>
         ),
       },
-      ...(isAdmin
-        ? [
-            {
-              key: "instructor",
-              label: "Instructor",
-              render: (_: unknown, row: Course) => (
-                <span className="text-sm text-base-content">
-                  {row.instructor
-                    ? `${row.instructor.firstName} ${row.instructor.lastName}`
-                    : "—"}
-                </span>
-              ),
-            } as columnType<Course>,
-          ]
-        : []),
       {
         key: "createdDate",
         label: "Created",
@@ -118,7 +110,7 @@ export default function CoursesPage() {
         render: (v) => <StatusBadge status={v ? "published" : "unpublished"} />,
       },
     ],
-    [isAdmin],
+    [],
   );
 
   const actions: Actions<Course>[] = [
@@ -126,6 +118,19 @@ export default function CoursesPage() {
       key: "view_details",
       label: "View Details",
       action: (row, r) => r.push(`/courses/${row.id}`),
+    },
+    {
+      key: "edit",
+      label: "Edit",
+      render: () => (
+        <span className="text-primary font-medium flex items-center gap-1.5">
+          <Edit2 size={15} /> Edit
+        </span>
+      ),
+      action: (row) => {
+        setEditingCourse(row);
+        editModalRef.current?.open(row);
+      },
     },
     {
       key: "toggle_publish",
@@ -248,6 +253,15 @@ export default function CoursesPage() {
         programs={programs}
         isSubmitting={busy}
         onSubmit={createCourse}
+      />
+
+      <EditCourseModal
+        ref={editModalRef}
+        programs={programs}
+        isSubmitting={busy}
+        course={editingCourse}
+        onClose={() => setEditingCourse(null)}
+        onSubmit={updateCourse}
       />
 
       <ConfirmModal

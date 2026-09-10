@@ -99,6 +99,42 @@ export function useCourses() {
     }
   };
 
+  const updateCourse = async (
+    id: string,
+    payload: Partial<CreateCoursePayload>,
+    file?: File | null,
+  ) => {
+    try {
+      setBusy(true);
+      let coverImage = payload.coverImage;
+      if (file) {
+        const up = await uploads.upload("image", file);
+        if (!up.success || !up.url) {
+          toast(up.message, "danger");
+          return false;
+        }
+        coverImage = up.url;
+      }
+      const res = await repo.update(
+        id,
+        {
+          ...payload,
+          ...(coverImage ? { coverImage } : {}),
+        },
+        isAdmin,
+      );
+      if (res.success) {
+        toast(res.message, "success");
+        await fetchCourses(page, filters);
+        return true;
+      }
+      toast(res.message, "danger");
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const mutate = async (
     fn: () => Promise<{ success: boolean; message: string }>,
   ) => {
@@ -127,6 +163,7 @@ export function useCourses() {
       fetchCourses(1, f);
     },
     createCourse,
+    updateCourse,
     publish: (id: string, isPublished: boolean) =>
       mutate(() => repo.update(id, { isPublished }, isAdmin)),
     feature: (id: string, featured: boolean) =>
