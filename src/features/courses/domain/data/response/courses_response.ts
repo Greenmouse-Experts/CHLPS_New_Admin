@@ -44,6 +44,9 @@ export interface Course {
   instructor?: CourseInstructor | null;
   contents?: CourseContent[];
   courseOutcomes?: CourseOutcome[];
+  certificationBenefits?: string[];
+  entryRequirements?: string[];
+  applicationQuestions?: { question: string }[];
 }
 
 export interface CourseContent {
@@ -91,8 +94,12 @@ export interface CreateCoursePayload {
   discount: number;
   program: string;
   coverImage: string;
-  previewUrl: null;
+  previewUrl?: string | null;
+  isPublished?: boolean;
   outcomes: CourseOutcome[];
+  certificationBenefits?: string[];
+  entryRequirements?: string[];
+  applicationQuestions?: { question: string }[];
 }
 
 export interface CreateContentPayload {

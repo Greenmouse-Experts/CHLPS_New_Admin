@@ -82,6 +82,7 @@ export interface Membership {
   howMembershipHelps?: HelpItem[];
   whyJoinNow?: WhyJoinNowSection;
   applicationQuestions?: ApplicationQuestionItem[];
+  careerPathways?: string[];
   registrationStartDate?: string;
   registrationEndDate?: string | null;
   status: MembershipStatus;

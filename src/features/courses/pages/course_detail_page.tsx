@@ -16,7 +16,7 @@ import {
   useToast,
 } from "@/components/ui";
 import PageLoader from "@/components/PageLoader";
-import { ExternalLink, EyeOff, Trash2 } from "lucide-react";
+import { Award, ExternalLink, EyeOff, GraduationCap, HelpCircle, Trash2 } from "lucide-react";
 import { RootState } from "@/lib/store/store";
 import CoursesRepository from "../domain/repository/courses_repository";
 import ProgramsRepository from "@/features/programs/domain/repository/programs_repository";
@@ -29,10 +29,6 @@ import {
   CourseSubContent,
   CreateCoursePayload,
 } from "../domain/data/response/courses_response";
-import {
-  EditCourseModal,
-  EditCourseModalHandle,
-} from "../components/edit_course_modal";
 import { formatDate } from "@/utils/helper/formate_date";
 import { formatCurrency } from "@/utils/helper/format_num";
 import { getAvatarColor } from "@/utils/avatar.colors";
@@ -68,7 +64,6 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
   const uploads = useMemo(() => new UploadRepository(), []);
   const programsRepo = useMemo(() => new ProgramsRepository(), []);
   const [programs, setPrograms] = useState<Program[]>([]);
-  const editModalRef = useRef<EditCourseModalHandle>(null);
 
   useEffect(() => {
     programsRepo.list(isAdmin).then((res) => {
@@ -362,7 +357,7 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
                 size="sm"
                 variant="outline"
                 leftIcon={<Edit2 size={14} color="currentColor" />}
-                onClick={() => editModalRef.current?.open(course)}
+                onClick={() => router.push(`/courses/edit/${course.id}`)}
               >
                 Edit Course
               </Button>
@@ -602,6 +597,103 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
                         </div>
                       )}
                     </div>
+
+                    {/* Certification Benefits */}
+                    {course.certificationBenefits &&
+                      course.certificationBenefits.length > 0 && (
+                        <div className="bg-white rounded-2xl border border-base-300 p-6 shadow-xs space-y-4">
+                          <div className="flex items-center gap-2">
+                            <Award size={18} className="text-amber-500" />
+                            <h3 className="text-base font-bold text-base-content">
+                              Certification Benefits
+                            </h3>
+                          </div>
+                          <Divider />
+                          <div className="grid grid-cols-1 gap-3">
+                            {course.certificationBenefits.map((benefit: unknown, idx: number) => (
+                              <div
+                                key={idx}
+                                className="flex items-start gap-3 p-3.5 rounded-xl border border-amber-200/60 bg-amber-50/30"
+                              >
+                                <div className="w-6 h-6 rounded-full bg-amber-500/15 text-amber-700 flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">
+                                  {idx + 1}
+                                </div>
+                                <p className="text-sm font-medium text-base-content leading-relaxed">
+                                  {typeof benefit === "string"
+                                    ? benefit
+                                    : (benefit as { value?: string })?.value || ""}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                    {/* Entry Requirements */}
+                    {course.entryRequirements &&
+                      course.entryRequirements.length > 0 && (
+                        <div className="bg-white rounded-2xl border border-base-300 p-6 shadow-xs space-y-4">
+                          <div className="flex items-center gap-2">
+                            <GraduationCap size={18} className="text-blue-600" />
+                            <h3 className="text-base font-bold text-base-content">
+                              Entry Requirements & Prerequisites
+                            </h3>
+                          </div>
+                          <Divider />
+                          <div className="grid grid-cols-1 gap-3">
+                            {course.entryRequirements.map((req: unknown, idx: number) => (
+                              <div
+                                key={idx}
+                                className="flex items-start gap-3 p-3.5 rounded-xl border border-blue-200/60 bg-blue-50/30"
+                              >
+                                <div className="w-6 h-6 rounded-full bg-blue-500/15 text-blue-700 flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">
+                                  {idx + 1}
+                                </div>
+                                <p className="text-sm font-medium text-base-content leading-relaxed">
+                                  {typeof req === "string"
+                                    ? req
+                                    : (req as { value?: string })?.value || ""}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                    {/* Application & Screening Questions */}
+                    {course.applicationQuestions &&
+                      course.applicationQuestions.length > 0 && (
+                        <div className="bg-white rounded-2xl border border-base-300 p-6 shadow-xs space-y-4">
+                          <div className="flex items-center gap-2">
+                            <HelpCircle size={18} className="text-primary" />
+                            <h3 className="text-base font-bold text-base-content">
+                              Application & Screening Questions
+                            </h3>
+                          </div>
+                          <Divider />
+                          <div className="space-y-2.5">
+                            {course.applicationQuestions.map((q: unknown, idx: number) => {
+                              const questionText =
+                                typeof q === "string"
+                                  ? q
+                                  : (q as { question?: string })?.question || "";
+                              return (
+                                <div
+                                  key={idx}
+                                  className="flex items-start gap-3 p-3.5 rounded-xl border border-base-200 bg-base-100"
+                                >
+                                  <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">
+                                    {idx + 1}
+                                  </div>
+                                  <p className="text-sm font-medium text-base-content">
+                                    {questionText}
+                                  </p>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                   </div>
 
                   {/* Right Column: Instructor Profile & Additional Info */}
@@ -1391,13 +1483,6 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
         }}
       />
 
-      <EditCourseModal
-        ref={editModalRef}
-        programs={programs}
-        isSubmitting={actionBusy}
-        course={course}
-        onSubmit={handleUpdateCourse}
-      />
     </DashboardLayout>
   );
 }

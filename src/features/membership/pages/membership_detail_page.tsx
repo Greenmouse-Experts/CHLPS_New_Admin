@@ -21,6 +21,7 @@ import {
   FileText,
   HelpCircle,
   Info,
+  Milestone,
   Pencil,
   Search,
   ShieldCheck,
@@ -607,6 +608,50 @@ export default function MembershipDetailPage({
                                   </p>
                                 </div>
                               ))}
+                            </div>
+                          </div>
+                        )}
+
+                      {/* Career Pathways & Progression */}
+                      {currentPlan.careerPathways &&
+                        currentPlan.careerPathways.length > 0 && (
+                          <div className="bg-white rounded-xl border border-[#E7E9EB] p-6 shadow-sm space-y-4">
+                            <div className="flex items-center gap-2">
+                              <Milestone size={20} className="text-primary" />
+                              <h3 className="text-base font-bold text-base-content">
+                                Career Pathways & Progression
+                              </h3>
+                            </div>
+                            <div className="space-y-2.5">
+                              {currentPlan.careerPathways.map(
+                                (pathway: unknown, i: number) => {
+                                  const text =
+                                    typeof pathway === "string"
+                                      ? pathway
+                                      : (pathway as { value?: string })
+                                          ?.value || "";
+                                  const key =
+                                    typeof pathway === "object" &&
+                                    pathway !== null &&
+                                    "id" in pathway
+                                      ? String((pathway as { id?: string }).id)
+                                      : String(i);
+
+                                  return (
+                                    <div
+                                      key={key}
+                                      className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10"
+                                    >
+                                      <div className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold shrink-0">
+                                        {i + 1}
+                                      </div>
+                                      <span className="text-sm font-semibold text-base-content">
+                                        {text}
+                                      </span>
+                                    </div>
+                                  );
+                                },
+                              )}
                             </div>
                           </div>
                         )}

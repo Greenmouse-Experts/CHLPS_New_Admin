@@ -16,11 +16,6 @@ import { ModalHandle } from "@/components/DialogModal";
 import { AddCircle, Edit2, SearchNormal1 } from "iconsax-react";
 import { useCourses } from "../domain/data/hooks/courses_hook";
 import { Course } from "../domain/data/response/courses_response";
-import { AddCourseModal } from "../components/add_course_modal";
-import {
-  EditCourseModal,
-  EditCourseModalHandle,
-} from "../components/edit_course_modal";
 import { formatDate } from "@/utils/helper/formate_date";
 import { formatCurrency } from "@/utils/helper/format_num";
 
@@ -46,9 +41,6 @@ export default function CoursesPage() {
     remove,
   } = useCourses();
 
-  const addModalRef = useRef<ModalHandle>(null);
-  const editModalRef = useRef<EditCourseModalHandle>(null);
-  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [confirm, setConfirm] = useState<{ id: string; type: string } | null>(
     null,
   );
@@ -127,10 +119,7 @@ export default function CoursesPage() {
           <Edit2 size={15} /> Edit
         </span>
       ),
-      action: (row) => {
-        setEditingCourse(row);
-        editModalRef.current?.open(row);
-      },
+      action: (row, r) => r.push(`/courses/edit/${row.id}`),
     },
     {
       key: "toggle_publish",
@@ -218,7 +207,7 @@ export default function CoursesPage() {
               Filter
             </Button>
             <Button
-              onClick={() => addModalRef.current?.open()}
+              onClick={() => router.push("/courses/create")}
               leftIcon={<AddCircle size={14} color="currentColor" />}
             >
               Add Course
@@ -247,22 +236,6 @@ export default function CoursesPage() {
           )}
         </div>
       </div>
-
-      <AddCourseModal
-        ref={addModalRef}
-        programs={programs}
-        isSubmitting={busy}
-        onSubmit={createCourse}
-      />
-
-      <EditCourseModal
-        ref={editModalRef}
-        programs={programs}
-        isSubmitting={busy}
-        course={editingCourse}
-        onClose={() => setEditingCourse(null)}
-        onSubmit={updateCourse}
-      />
 
       <ConfirmModal
         open={!!confirm}

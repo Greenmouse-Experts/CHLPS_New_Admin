@@ -38,6 +38,7 @@ import {
   FileText,
   HelpCircle,
   Info,
+  Milestone,
   Plus,
   ShieldCheck,
   Sparkles,
@@ -62,6 +63,7 @@ interface FormValues {
   status: MembershipStatus;
 
   // Career & Value Highlights
+  careerPathways: { value: string }[];
   jobOpportunities: {
     iconUrl?: string;
     title: string;
@@ -164,6 +166,13 @@ function getFormDefaults(membership?: Membership | null): FormValues {
     image: membership?.image ?? null,
     status: membership?.status ?? "draft",
 
+    careerPathways:
+      (membership?.careerPathways?.length ? membership.careerPathways : []).map(
+        (v: unknown) => ({
+          value: typeof v === "string" ? v : (v as { value?: string })?.value || "",
+        }),
+      ),
+
     jobOpportunities:
       membership?.jobOpportunities?.map((item) => ({
         iconUrl: item.iconUrl || "",
@@ -256,6 +265,15 @@ export default function MembershipEditorPage({
   } = useFieldArray({
     control,
     name: "benefits",
+  });
+
+  const {
+    fields: pathwayFields,
+    append: appendPathway,
+    remove: removePathway,
+  } = useFieldArray({
+    control,
+    name: "careerPathways",
   });
 
   const {
@@ -439,6 +457,10 @@ export default function MembershipEditorPage({
           }
         : undefined;
 
+    const careerPathways = (values.careerPathways || [])
+      .map((c) => c.value.trim())
+      .filter(Boolean);
+
     const applicationQuestions = (values.applicationQuestions || [])
       .map((q) => ({
         question: q.question.trim(),
@@ -468,6 +490,7 @@ export default function MembershipEditorPage({
         : {}),
       status: values.status,
       image: values.image || null,
+      careerPathways,
       jobOpportunities,
       howMembershipHelps,
       whyJoinNow,
@@ -994,6 +1017,62 @@ export default function MembershipEditorPage({
 
               {/* TAB 3: Career & Help */}
               <div className={activeTab === "career" ? "space-y-6" : "hidden"}>
+                {/* Career Pathways */}
+                <div className="bg-white rounded-xl border border-[#E7E9EB] p-6 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Milestone size={20} className="text-primary" />
+                      <div>
+                        <h2 className="text-base font-bold text-base-content">
+                          Career Pathways & Progression
+                        </h2>
+                        <p className="text-xs text-base-content/60">
+                          Certificates, credentials, or advanced qualifications members can progress to.
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => appendPathway({ value: "" })}
+                      leftIcon={<Plus size={14} />}
+                    >
+                      Add Pathway
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    {pathwayFields.map((field, idx) => (
+                      <div key={field.id} className="flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-bold shrink-0">
+                          {idx + 1}
+                        </span>
+                        <div className="flex-1">
+                          <SimpleInput
+                            placeholder={`e.g. Progression to Basic Professional Certificate in Loss Prevention`}
+                            {...register(`careerPathways.${idx}.value`)}
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-error hover:bg-error/10"
+                          onClick={() => removePathway(idx)}
+                        >
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {pathwayFields.length === 0 && (
+                    <p className="text-xs text-secondary italic py-3 text-center bg-base-200/20 rounded-lg">
+                      No career pathways added. Click &quot;Add Pathway&quot; to outline professional advancement steps.
+                    </p>
+                  )}
+                </div>
                 {/* Job Opportunities */}
                 <div className="bg-white rounded-xl border border-[#E7E9EB] p-6 shadow-sm space-y-5">
                   <div className="flex items-center justify-between">

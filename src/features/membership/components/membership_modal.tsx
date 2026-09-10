@@ -39,7 +39,7 @@ import {
   LampCharge,
   MessageQuestion,
 } from "iconsax-react";
-import { Trash2 } from "lucide-react";
+import { Trash2, Milestone } from "lucide-react";
 
 export interface Props {
   open?: boolean;
@@ -69,6 +69,7 @@ interface FormValues {
   status: MembershipStatus;
 
   // Career & Value Highlights
+  careerPathways: { value: string }[];
   jobOpportunities: {
     iconUrl?: string;
     title: string;
@@ -163,6 +164,13 @@ function getFormDefaults(membership?: Membership | null): FormValues {
     requiredDocuments: membership?.requiredDocuments ?? [],
     image: membership?.image ?? null,
     status: membership?.status ?? "draft",
+
+    careerPathways:
+      (membership?.careerPathways?.length ? membership.careerPathways : []).map(
+        (v: unknown) => ({
+          value: typeof v === "string" ? v : (v as { value?: string })?.value || "",
+        }),
+      ),
 
     jobOpportunities:
       membership?.jobOpportunities?.map((item) => ({
@@ -265,6 +273,15 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
     } = useFieldArray({
       control,
       name: "benefits",
+    });
+
+    const {
+      fields: pathwayFields,
+      append: appendPathway,
+      remove: removePathway,
+    } = useFieldArray({
+      control,
+      name: "careerPathways",
     });
 
     const {
@@ -425,6 +442,10 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
             }
           : undefined;
 
+      const careerPathways = (values.careerPathways || [])
+        .map((c) => c.value.trim())
+        .filter(Boolean);
+
       const applicationQuestions = (values.applicationQuestions || [])
         .map((q) => ({
           question: q.question.trim(),
@@ -454,6 +475,7 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
           : {}),
         status: values.status,
         image: values.image || null,
+        careerPathways,
         jobOpportunities,
         howMembershipHelps,
         whyJoinNow,
@@ -855,6 +877,57 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
 
               {/* TAB 3: Career & Help */}
               <div className={activeTab === "career" ? "space-y-6" : "hidden"}>
+                {/* Career Pathways */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <FieldLabel>Career Pathways & Progression</FieldLabel>
+                      <p className="text-xs text-[#717171]">
+                        Certificates or credentials members can advance to.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => appendPathway({ value: "" })}
+                      leftIcon={<AddCircle size={14} />}
+                    >
+                      Add pathway
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2">
+                    {pathwayFields.map((field, idx) => (
+                      <div key={field.id} className="flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-bold shrink-0">
+                          {idx + 1}
+                        </span>
+                        <div className="flex-1">
+                          <SimpleInput
+                            placeholder={`e.g. Progression to Basic Professional Certificate in Loss Prevention`}
+                            {...register(`careerPathways.${idx}.value`)}
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-error hover:bg-error/10"
+                          onClick={() => removePathway(idx)}
+                        >
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {pathwayFields.length === 0 && (
+                    <p className="text-xs text-[#717171] italic">
+                      No career pathways added yet.
+                    </p>
+                  )}
+                </div>
                 {/* Job Opportunities */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
