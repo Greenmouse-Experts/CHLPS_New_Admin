@@ -33,7 +33,12 @@ export interface WhyJoinNowSection {
   heading?: string;
   description?: string;
   infoCards?: WhyJoinNowInfoCard[];
-  highlights?: WhyJoinNowHighlight[];
+  highlights?: string[] | WhyJoinNowHighlight[];
+}
+
+export interface ApplicationQuestionItem {
+  id?: string;
+  question: string;
 }
 
 export interface MembershipTypeRef {
@@ -72,10 +77,11 @@ export interface Membership {
   renewalPrice?: number | null;
   renewalPeriod?: string | null;
   benefits: string[];
-  requiredDocuments: string[];
+  requiredDocuments?: string[];
   jobOpportunities?: JobOpportunityItem[];
   howMembershipHelps?: HelpItem[];
   whyJoinNow?: WhyJoinNowSection;
+  applicationQuestions?: ApplicationQuestionItem[];
   registrationStartDate?: string;
   registrationEndDate?: string | null;
   status: MembershipStatus;

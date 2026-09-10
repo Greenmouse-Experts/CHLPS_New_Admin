@@ -16,6 +16,7 @@ import {
   useToast,
 } from "@/components/ui";
 import PageLoader from "@/components/PageLoader";
+import { ExternalLink, EyeOff } from "lucide-react";
 import { RootState } from "@/lib/store/store";
 import CoursesRepository from "../domain/repository/courses_repository";
 import ProgramsRepository from "@/features/programs/domain/repository/programs_repository";
@@ -863,93 +864,186 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
                           {isExpanded && (
                             <div className="p-4 bg-white border-t border-base-200 space-y-3">
                               {sectionSubs.length > 0 ? (
-                                <div className="divide-y divide-base-200">
-                                  {sectionSubs.map((lesson) => (
-                                    <div
-                                      key={lesson.id}
-                                      className="flex items-center justify-between py-2.5 px-2 hover:bg-base-100 rounded-lg transition-colors"
-                                    >
-                                      <div className="flex items-center gap-3 min-w-0">
-                                        <div className="w-8 h-8 rounded-lg bg-base-200 text-secondary flex items-center justify-center shrink-0">
-                                          {lesson.mediaType === "video" && (
-                                            <VideoPlay size={16} />
-                                          )}
-                                          {lesson.mediaType === "document" && (
-                                            <DocumentText size={16} />
-                                          )}
-                                          {lesson.mediaType ===
-                                            "assessment" && (
-                                            <MessageQuestion size={16} />
-                                          )}
-                                          {lesson.mediaType !== "video" &&
-                                            lesson.mediaType !== "document" &&
-                                            lesson.mediaType !==
-                                              "assessment" && (
-                                              <NoteText size={16} />
-                                            )}
-                                        </div>
-                                        <div className="truncate">
-                                          <p className="font-medium text-sm text-base-content truncate">
-                                            {lesson.title}
-                                          </p>
-                                          <div className="flex items-center gap-2 text-xs text-secondary mt-0.5">
-                                            <span className="capitalize font-medium">
-                                              {lesson.mediaType}
-                                            </span>
-                                            {lesson.duration ? (
-                                              <span>
-                                                • {lesson.duration} min(s)
+                                <div className="space-y-2.5">
+                                  {sectionSubs.map((lesson, lessonIdx) => {
+                                    const isAssessment = lesson.mediaType === "assessment";
+                                    const hasMedia = Boolean(lesson.media);
+                                    const isClickable = isAssessment || hasMedia;
+
+                                    return (
+                                      <div
+                                        key={lesson.id}
+                                        className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl border transition-all gap-3 ${
+                                          isClickable
+                                            ? "bg-white border-base-200/90 hover:border-primary/40 hover:shadow-xs"
+                                            : "bg-base-200/30 border-dashed border-base-300"
+                                        }`}
+                                      >
+                                        {/* Left: icon + lesson info */}
+                                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                                          {/* Media type icon badge */}
+                                          <div
+                                            className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 border ${
+                                              lesson.mediaType === "video"
+                                                ? "bg-blue-50 text-blue-600 border-blue-200/60"
+                                                : lesson.mediaType === "document"
+                                                ? "bg-purple-50 text-purple-600 border-purple-200/60"
+                                                : lesson.mediaType === "assessment"
+                                                ? "bg-amber-50 text-amber-600 border-amber-200/60"
+                                                : lesson.mediaType === "audio"
+                                                ? "bg-emerald-50 text-emerald-600 border-emerald-200/60"
+                                                : "bg-base-200 text-secondary border-base-300"
+                                            }`}
+                                          >
+                                            {lesson.mediaType === "video" && <VideoPlay size={18} />}
+                                            {lesson.mediaType === "document" && <DocumentText size={18} />}
+                                            {lesson.mediaType === "assessment" && <MessageQuestion size={18} />}
+                                            {lesson.mediaType !== "video" &&
+                                              lesson.mediaType !== "document" &&
+                                              lesson.mediaType !== "assessment" && <NoteText size={18} />}
+                                          </div>
+
+                                          {/* Title & metadata */}
+                                          <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                              <span className="text-xs font-mono text-secondary font-medium">
+                                                {idx + 1}.{lessonIdx + 1}
                                               </span>
-                                            ) : null}
+
+                                              {isAssessment ? (
+                                                <button
+                                                  type="button"
+                                                  onClick={() =>
+                                                    router.push(
+                                                      `/assessment/${lesson.id}?courseId=${courseId}&contentId=${section.id}`,
+                                                    )
+                                                  }
+                                                  className="font-semibold text-sm text-base-content hover:text-primary hover:underline truncate text-left cursor-pointer inline-flex items-center gap-1.5"
+                                                  title="Click to open and manage questions for this assessment"
+                                                >
+                                                  {lesson.title}
+                                                </button>
+                                              ) : hasMedia ? (
+                                                <a
+                                                  href={lesson.media}
+                                                  target="_blank"
+                                                  rel="noreferrer"
+                                                  className="font-semibold text-sm text-base-content hover:text-primary hover:underline truncate inline-flex items-center gap-1.5 cursor-pointer"
+                                                  title="Click to preview media in new tab"
+                                                >
+                                                  {lesson.title}
+                                                  <ExternalLink size={12} className="opacity-50 inline shrink-0" />
+                                                </a>
+                                              ) : (
+                                                <span
+                                                  className="font-medium text-sm text-base-content/80 truncate cursor-default"
+                                                  title="Content item with no media file attached"
+                                                >
+                                                  {lesson.title}
+                                                </span>
+                                              )}
+                                            </div>
+
+                                            {/* Details line */}
+                                            <div className="flex items-center gap-2 text-xs text-secondary mt-1 flex-wrap">
+                                              <span
+                                                className={`px-1.5 py-0.5 rounded text-[11px] font-semibold capitalize border ${
+                                                  lesson.mediaType === "video"
+                                                    ? "bg-blue-50 text-blue-700 border-blue-200"
+                                                    : lesson.mediaType === "document"
+                                                    ? "bg-purple-50 text-purple-700 border-purple-200"
+                                                    : lesson.mediaType === "assessment"
+                                                    ? "bg-amber-50 text-amber-700 border-amber-200"
+                                                    : "bg-base-200 text-base-content/70 border-base-300"
+                                                }`}
+                                              >
+                                                {lesson.mediaType}
+                                              </span>
+
+                                              {lesson.duration ? (
+                                                <span className="text-secondary text-[11px]">
+                                                  • {lesson.duration} min(s)
+                                                </span>
+                                              ) : null}
+
+                                              {/* Interactive status indicators */}
+                                              {isAssessment && (
+                                                <span className="text-amber-700 text-[11px] font-medium flex items-center gap-1">
+                                                  • Interactive Quiz
+                                                </span>
+                                              )}
+                                              {!isAssessment && hasMedia && (
+                                                <span className="text-emerald-700 text-[11px] font-medium flex items-center gap-1">
+                                                  • <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" /> Media attached
+                                                </span>
+                                              )}
+                                              {!isAssessment && !hasMedia && (
+                                                <span className="text-base-content/40 text-[11px] flex items-center gap-1 italic">
+                                                  • No media uploaded
+                                                </span>
+                                              )}
+                                            </div>
                                           </div>
                                         </div>
-                                      </div>
 
-                                      <div className="flex items-center gap-2 shrink-0 ml-3">
-                                        {lesson.mediaType === "assessment" && (
-                                          <Button
-                                            size="xs"
-                                            variant="outline"
-                                            onClick={() =>
-                                              router.push(
-                                                `/assessment/${lesson.id}?courseId=${courseId}&contentId=${section.id}`,
-                                              )
-                                            }
-                                          >
-                                            Manage Questions
-                                          </Button>
-                                        )}
-                                        {lesson.media && (
+                                        {/* Right: Action buttons */}
+                                        <div className="flex items-center gap-2 shrink-0 sm:self-center border-t sm:border-t-0 pt-2 sm:pt-0 border-base-200">
+                                          {isAssessment && (
+                                            <Button
+                                              size="xs"
+                                              variant="primary"
+                                              className="gap-1.5 shadow-xs"
+                                              onClick={() =>
+                                                router.push(
+                                                  `/assessment/${lesson.id}?courseId=${courseId}&contentId=${section.id}`,
+                                                )
+                                              }
+                                            >
+                                              <MessageQuestion size={13} />
+                                              Manage Questions
+                                            </Button>
+                                          )}
+
+                                          {!isAssessment && hasMedia && (
+                                            <a
+                                              href={lesson.media}
+                                              target="_blank"
+                                              rel="noreferrer"
+                                              className="btn btn-xs btn-outline border-base-300 hover:border-primary hover:bg-primary/5 hover:text-primary gap-1.5 font-medium cursor-pointer"
+                                              title="Preview media resource in a new tab"
+                                            >
+                                              <Eye size={13} />
+                                              Preview Media
+                                              <ExternalLink size={12} className="opacity-60" />
+                                            </a>
+                                          )}
+
+                                          {!isAssessment && !hasMedia && (
+                                            <span
+                                              className="px-2.5 py-1 text-[11px] rounded-lg bg-base-200/70 text-secondary border border-dashed border-base-300 flex items-center gap-1.5 cursor-not-allowed select-none"
+                                              title="This lesson does not have a media file uploaded"
+                                            >
+                                              <EyeOff size={12} className="opacity-50" />
+                                              No Media
+                                            </span>
+                                          )}
+
                                           <Button
                                             size="xs"
                                             variant="ghost"
-                                            leftIcon={<Eye size={13} />}
-                                            onClick={() =>
-                                              window.open(
-                                                lesson.media,
-                                                "_blank",
-                                              )
-                                            }
+                                            className="text-error hover:bg-error/10 hover:border-error/20"
+                                            title="Delete lesson"
+                                            onClick={() => setDeleteSubId(lesson.id)}
                                           >
-                                            Preview
+                                            <Trash size={14} />
                                           </Button>
-                                        )}
-                                        <Button
-                                          size="xs"
-                                          variant="ghost"
-                                          className="text-error hover:bg-error/10"
-                                          onClick={() =>
-                                            setDeleteSubId(lesson.id)
-                                          }
-                                        >
-                                          <Trash size={14} />
-                                        </Button>
+                                        </div>
                                       </div>
-                                    </div>
-                                  ))}
+                                    );
+                                  })}
                                 </div>
                               ) : (
-                                <p className="text-xs text-secondary text-center py-4">
+                                <p className="text-xs text-secondary text-center py-4 bg-base-200/30 rounded-xl border border-dashed border-base-300">
                                   No lessons added to this module yet.
                                 </p>
                               )}

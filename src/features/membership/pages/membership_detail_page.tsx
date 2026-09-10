@@ -21,6 +21,7 @@ import {
   Edit2,
   InfoCircle,
   LampCharge,
+  MessageQuestion,
   People,
   SearchNormal1,
   ShieldTick,
@@ -517,13 +518,13 @@ export default function MembershipDetailPage({
                             currentPlan.whyJoinNow.highlights.length > 0 && (
                               <div className="flex flex-wrap gap-2 pt-2">
                                 {currentPlan.whyJoinNow.highlights.map(
-                                  (hl, i) => (
+                                  (hl: any, i) => (
                                     <div
-                                      key={hl.id || i}
+                                      key={hl?.id || i}
                                       className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/5 text-primary text-xs font-semibold"
                                     >
                                       <TickCircle size={14} variant="Bold" />
-                                      <span>{hl.value}</span>
+                                      <span>{typeof hl === "string" ? hl : (hl?.value || "")}</span>
                                     </div>
                                   ),
                                 )}
@@ -616,6 +617,34 @@ export default function MembershipDetailPage({
                                   <p className="text-xs text-base-content/70 leading-relaxed">
                                     {job.description}
                                   </p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                      {/* Application Questions */}
+                      {currentPlan.applicationQuestions &&
+                        currentPlan.applicationQuestions.length > 0 && (
+                          <div className="bg-white rounded-xl border border-[#E7E9EB] p-6 shadow-sm space-y-4">
+                            <div className="flex items-center gap-2">
+                              <MessageQuestion size={20} className="text-primary" />
+                              <h3 className="text-base font-bold text-base-content">
+                                Application Questions
+                              </h3>
+                            </div>
+                            <div className="space-y-2">
+                              {currentPlan.applicationQuestions.map((q: any, i) => (
+                                <div
+                                  key={q?.id || i}
+                                  className="flex items-start gap-3 p-3 rounded-lg bg-base-200/40 border border-base-300"
+                                >
+                                  <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-bold shrink-0 mt-0.5">
+                                    {i + 1}
+                                  </span>
+                                  <span className="text-sm text-base-content font-medium">
+                                    {typeof q === "string" ? q : (q?.question || "")}
+                                  </span>
                                 </div>
                               ))}
                             </div>
