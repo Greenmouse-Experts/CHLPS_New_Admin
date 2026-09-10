@@ -16,7 +16,6 @@ import {
 } from "iconsax-react";
 import { useMemberships } from "../domain/data/hooks/membership_hook";
 import { Membership } from "../domain/data/response/membership_response";
-import { MembershipModal } from "../components/membership_modal";
 import { formatDate } from "@/utils/helper/formate_date";
 import { formatCurrency } from "@/utils/helper/format_num";
 
@@ -30,20 +29,15 @@ export default function MembershipPage() {
     isLoading,
     isError,
     error,
-    isSaving,
     search,
     stats,
     handleSearch,
     handlePageChange,
-    createMembership,
-    updateMembership,
     togglePublish,
     removeMembership,
     refetch,
   } = useMemberships();
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<Membership | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const columns: columnType<Membership>[] = [
@@ -150,9 +144,9 @@ export default function MembershipPage() {
     {
       key: "edit",
       label: "Edit",
-      action: (row) => {
-        setEditing(row);
-        setModalOpen(true);
+      action: (row, r) => {
+        if (!row.id) return;
+        r.push(`/membership/edit/${row.id}`);
       },
     },
     {
@@ -206,10 +200,7 @@ export default function MembershipPage() {
             </div>
             <Button
               leftIcon={<AddCircle size={14} color="currentColor" />}
-              onClick={() => {
-                setEditing(null);
-                setModalOpen(true);
-              }}
+              onClick={() => router.push("/membership/create")}
             >
               Create membership
             </Button>
@@ -245,32 +236,18 @@ export default function MembershipPage() {
         </div>
       </div>
 
-      <MembershipModal
-        open={modalOpen}
-        membership={editing}
-        isSubmitting={isSaving}
-        onClose={() => {
-          setModalOpen(false);
-          setEditing(null);
-        }}
-        onSubmit={(payload) =>
-          editing && editing.id
-            ? updateMembership(editing.id, payload)
-            : createMembership(payload)
-        }
-      />
-
       <ConfirmModal
-        open={!!deleteId}
+        open={Boolean(deleteId)}
         onClose={() => setDeleteId(null)}
         title="Delete membership"
-        description="This will permanently remove the membership plan from the list."
+        description="Are you sure you want to delete this membership plan? This action cannot be undone."
         confirmLabel="Delete"
         variant="danger"
         onConfirm={async () => {
-          if (!deleteId) return;
-          await removeMembership(deleteId);
-          setDeleteId(null);
+          if (deleteId) {
+            await removeMembership(deleteId);
+            setDeleteId(null);
+          }
         }}
       />
     </DashboardLayout>

@@ -14,28 +14,26 @@ import CustomTable, { columnType } from "@/components/tables/CustomTable";
 import PopUp, { Actions } from "@/components/tables/pop-up";
 import PageLoader from "@/components/PageLoader";
 import {
-  ArrowLeft2,
+  ArrowLeft,
   Briefcase,
   Calendar,
-  DocumentText,
-  Edit2,
-  InfoCircle,
-  LampCharge,
-  MessageQuestion,
-  People,
-  SearchNormal1,
-  ShieldTick,
-  TickCircle,
-  Trash,
-  Wallet3,
-} from "iconsax-react";
+  CheckCircle2,
+  FileText,
+  HelpCircle,
+  Info,
+  Pencil,
+  Search,
+  ShieldCheck,
+  Sparkles,
+  Trash2,
+  Users,
+  Wallet,
+} from "lucide-react";
 import { useMembershipDetail } from "../domain/data/hooks/membership_hook";
 import {
   MembershipSubscriber,
   MembershipTransaction,
 } from "../domain/data/response/membership_response";
-import { MembershipModal } from "../components/membership_modal";
-import { Trash2 } from "lucide-react";
 import { formatDate } from "@/utils/helper/formate_date";
 import { formatCurrency } from "@/utils/helper/format_num";
 
@@ -60,7 +58,6 @@ export default function MembershipDetailPage({
   } = useMembershipDetail(membershipId);
 
   const [activeTab, setActiveTab] = useState("overview");
-  const [modalOpen, setModalOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [memberSearch, setMemberSearch] = useState("");
   const [headerMenuIndex, setHeaderMenuIndex] = useState<number | null>(null);
@@ -83,7 +80,7 @@ export default function MembershipDetailPage({
     {
       key: "edit",
       label: "Edit Plan",
-      action: () => setModalOpen(true),
+      action: () => router.push(`/membership/edit/${membershipId}`),
     },
     {
       key: "toggle_publish",
@@ -161,7 +158,7 @@ export default function MembershipDetailPage({
       label: "Expiry Date",
       render: (v) => (
         <span className="text-sm text-base-content/80 whitespace-nowrap">
-          {v.startsWith("2099") ? "Lifetime" : formatDate(v, "DD MMM YYYY")}
+          {v?.startsWith("2099") ? "Lifetime" : formatDate(v, "DD MMM YYYY")}
         </span>
       ),
     },
@@ -276,17 +273,23 @@ export default function MembershipDetailPage({
                     className="w-9 h-9 rounded-lg border border-[#E7E9EB] hover:bg-base-200 flex items-center justify-center text-base-content/70 transition-colors cursor-pointer"
                     title="Back to Memberships"
                   >
-                    <ArrowLeft2 size={18} color="currentColor" />
+                    <ArrowLeft size={18} />
                   </button>
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <h1 className="text-xl font-bold text-base-content">
                         {currentPlan.name}
                       </h1>
-                      <StatusBadge status={currentPlan.status as any} />
+                      <StatusBadge status={currentPlan.status} />
                       <span className="text-xs px-2.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium capitalize">
                         {typeName}
                       </span>
+                      {currentPlan.category &&
+                        currentPlan.category !== typeName && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-base-200 text-base-content/70 font-medium">
+                            {currentPlan.category}
+                          </span>
+                        )}
                     </div>
                     {currentPlan.createdDate && (
                       <p className="text-xs text-base-content/60 mt-0.5">
@@ -313,8 +316,10 @@ export default function MembershipDetailPage({
                   <Button
                     size="sm"
                     variant="outline"
-                    leftIcon={<Edit2 size={14} color="currentColor" />}
-                    onClick={() => setModalOpen(true)}
+                    leftIcon={<Pencil size={14} />}
+                    onClick={() =>
+                      router.push(`/membership/edit/${membershipId}`)
+                    }
                   >
                     Edit
                   </Button>
@@ -345,13 +350,13 @@ export default function MembershipDetailPage({
                   title="Total Members"
                   value={currentPlan.membersCount ?? 0}
                   loading={isLoading}
-                  icon={<People size={20} color="#717171" />}
+                  icon={<Users size={20} className="text-secondary" />}
                 />
                 <StatCard
                   title="Enrolled This Month"
                   value={currentPlan.membersThisMonth ?? 0}
                   loading={isLoading}
-                  icon={<Calendar size={20} color="#717171" />}
+                  icon={<Calendar size={20} className="text-secondary" />}
                 />
                 <StatCard
                   title="Total Revenue"
@@ -360,7 +365,7 @@ export default function MembershipDetailPage({
                     decimals: 0,
                   })}
                   loading={isLoading}
-                  icon={<Wallet3 size={20} color="#717171" />}
+                  icon={<Wallet size={20} className="text-secondary" />}
                 />
                 <div className="bg-white rounded-xl border border-[#E7E9EB] p-4 shadow-sm flex flex-col justify-between">
                   <p className="text-xs text-base-content/60 font-medium">
@@ -383,7 +388,7 @@ export default function MembershipDetailPage({
               <div className="space-y-4">
                 <Tabs
                   tabs={[
-                    { key: "overview", label: "Overview & Criteria" },
+                    { key: "overview", label: "Overview & Features" },
                     {
                       key: "members",
                       label: `Enrolled Members (${subscribers.length})`,
@@ -397,7 +402,7 @@ export default function MembershipDetailPage({
                   onChange={setActiveTab}
                 />
 
-                {/* Tab 1: Overview & Criteria */}
+                {/* Tab 1: Overview & Features */}
                 {activeTab === "overview" && (
                   <div className="grid lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 space-y-6">
@@ -504,7 +509,7 @@ export default function MembershipDetailPage({
                       {currentPlan.whyJoinNow && (
                         <div className="bg-white rounded-xl border border-[#E7E9EB] p-6 shadow-sm space-y-4">
                           <div className="flex items-center gap-2">
-                            <InfoCircle size={20} className="text-primary" />
+                            <Info size={20} className="text-primary" />
                             <h3 className="text-base font-bold text-base-content">
                               {currentPlan.whyJoinNow.heading ||
                                 "Why should I join now?"}
@@ -519,15 +524,32 @@ export default function MembershipDetailPage({
                             currentPlan.whyJoinNow.highlights.length > 0 && (
                               <div className="flex flex-wrap gap-2 pt-2">
                                 {currentPlan.whyJoinNow.highlights.map(
-                                  (hl: any, i) => (
-                                    <div
-                                      key={hl?.id || i}
-                                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/5 text-primary text-xs font-semibold"
-                                    >
-                                      <TickCircle size={14} variant="Bold" />
-                                      <span>{typeof hl === "string" ? hl : (hl?.value || "")}</span>
-                                    </div>
-                                  ),
+                                  (hl: unknown, i: number) => {
+                                    const text =
+                                      typeof hl === "string"
+                                        ? hl
+                                        : (hl as { value?: string })?.value ||
+                                          "";
+                                    const key =
+                                      typeof hl === "object" &&
+                                      hl !== null &&
+                                      "id" in hl
+                                        ? String((hl as { id?: string }).id)
+                                        : String(i);
+
+                                    return (
+                                      <div
+                                        key={key}
+                                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/5 text-primary text-xs font-semibold"
+                                      >
+                                        <CheckCircle2
+                                          size={14}
+                                          className="text-primary shrink-0"
+                                        />
+                                        <span>{text}</span>
+                                      </div>
+                                    );
+                                  },
                                 )}
                               </div>
                             )}
@@ -559,7 +581,7 @@ export default function MembershipDetailPage({
                         currentPlan.howMembershipHelps.length > 0 && (
                           <div className="bg-white rounded-xl border border-[#E7E9EB] p-6 shadow-sm space-y-4">
                             <div className="flex items-center gap-2">
-                              <LampCharge size={20} className="text-primary" />
+                              <Sparkles size={20} className="text-primary" />
                               <h3 className="text-base font-bold text-base-content">
                                 How Membership Helps
                               </h3>
@@ -589,7 +611,7 @@ export default function MembershipDetailPage({
                           </div>
                         )}
 
-                      {/* Job Opportunities */}
+                      {/* Job & Career Opportunities */}
                       {currentPlan.jobOpportunities &&
                         currentPlan.jobOpportunities.length > 0 && (
                           <div className="bg-white rounded-xl border border-[#E7E9EB] p-6 shadow-sm space-y-4">
@@ -629,25 +651,41 @@ export default function MembershipDetailPage({
                         currentPlan.applicationQuestions.length > 0 && (
                           <div className="bg-white rounded-xl border border-[#E7E9EB] p-6 shadow-sm space-y-4">
                             <div className="flex items-center gap-2">
-                              <MessageQuestion size={20} className="text-primary" />
+                              <HelpCircle size={20} className="text-primary" />
                               <h3 className="text-base font-bold text-base-content">
                                 Application Questions
                               </h3>
                             </div>
                             <div className="space-y-2">
-                              {currentPlan.applicationQuestions.map((q: any, i) => (
-                                <div
-                                  key={q?.id || i}
-                                  className="flex items-start gap-3 p-3 rounded-lg bg-base-200/40 border border-base-300"
-                                >
-                                  <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-bold shrink-0 mt-0.5">
-                                    {i + 1}
-                                  </span>
-                                  <span className="text-sm text-base-content font-medium">
-                                    {typeof q === "string" ? q : (q?.question || "")}
-                                  </span>
-                                </div>
-                              ))}
+                              {currentPlan.applicationQuestions.map(
+                                (q: unknown, i: number) => {
+                                  const questionText =
+                                    typeof q === "string"
+                                      ? q
+                                      : (q as { question?: string })
+                                          ?.question || "";
+                                  const key =
+                                    typeof q === "object" &&
+                                    q !== null &&
+                                    "id" in q
+                                      ? String((q as { id?: string }).id)
+                                      : String(i);
+
+                                  return (
+                                    <div
+                                      key={key}
+                                      className="flex items-start gap-3 p-3 rounded-lg bg-base-200/40 border border-base-300"
+                                    >
+                                      <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-bold shrink-0 mt-0.5">
+                                        {i + 1}
+                                      </span>
+                                      <span className="text-sm text-base-content font-medium">
+                                        {questionText}
+                                      </span>
+                                    </div>
+                                  );
+                                },
+                              )}
                             </div>
                           </div>
                         )}
@@ -655,7 +693,7 @@ export default function MembershipDetailPage({
                       {/* Member Benefits */}
                       <div className="bg-white rounded-xl border border-[#E7E9EB] p-6 shadow-sm space-y-4">
                         <div className="flex items-center gap-2">
-                          <ShieldTick size={20} className="text-primary" />
+                          <ShieldCheck size={20} className="text-primary" />
                           <h3 className="text-base font-bold text-base-content">
                             Member Benefits & Privileges
                           </h3>
@@ -666,10 +704,9 @@ export default function MembershipDetailPage({
                               key={idx}
                               className="flex items-start gap-3 p-3 rounded-lg bg-emerald-50/50 border border-emerald-100"
                             >
-                              <TickCircle
+                              <CheckCircle2
                                 size={18}
                                 className="text-emerald-600 shrink-0 mt-0.5"
-                                variant="Bold"
                               />
                               <span className="text-sm text-base-content font-medium leading-snug">
                                 {benefit}
@@ -715,7 +752,7 @@ export default function MembershipDetailPage({
 
                       <div className="bg-white rounded-xl border border-[#E7E9EB] p-6 shadow-sm space-y-4">
                         <div className="flex items-center gap-2">
-                          <DocumentText size={18} className="text-primary" />
+                          <FileText size={18} className="text-primary" />
                           <h3 className="text-base font-bold text-base-content">
                             Required Documents
                           </h3>
@@ -726,7 +763,7 @@ export default function MembershipDetailPage({
                               key={idx}
                               className="flex items-center gap-3 p-3 rounded-lg border border-[#E7E9EB] bg-base-100"
                             >
-                              <DocumentText
+                              <FileText
                                 size={18}
                                 className="text-base-content/70"
                               />
@@ -752,7 +789,7 @@ export default function MembershipDetailPage({
                   <div className="bg-white rounded-xl border border-[#E7E9EB] p-4 shadow-sm space-y-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div className="flex items-center gap-2 border border-[#E7E9EB] rounded-lg px-3 h-9 bg-white w-64 focus-within:border-primary transition-colors">
-                        <SearchNormal1 size={15} color="#717171" />
+                        <Search size={15} className="text-secondary" />
                         <input
                           type="text"
                           value={memberSearch}
@@ -807,18 +844,6 @@ export default function MembershipDetailPage({
           );
         }}
       </PageLoader>
-
-      <MembershipModal
-        open={modalOpen}
-        membership={membership}
-        isSubmitting={isSaving}
-        onClose={() => setModalOpen(false)}
-        onSubmit={async (payload) => {
-          const ok = await updateMembership(payload);
-          if (ok) setModalOpen(false);
-          return ok;
-        }}
-      />
 
       <ConfirmModal
         open={deleteOpen}
