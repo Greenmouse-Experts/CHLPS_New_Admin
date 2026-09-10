@@ -35,6 +35,7 @@ import {
   MembershipTransaction,
 } from "../domain/data/response/membership_response";
 import { MembershipModal } from "../components/membership_modal";
+import { Trash2 } from "lucide-react";
 import { formatDate } from "@/utils/helper/formate_date";
 import { formatCurrency } from "@/utils/helper/format_num";
 
@@ -321,7 +322,7 @@ export default function MembershipDetailPage({
                     size="sm"
                     variant="ghost"
                     className="text-error hover:bg-error/10"
-                    leftIcon={<Trash size={14} color="currentColor" />}
+                    leftIcon={<Trash2 size={14} />}
                     onClick={() => setDeleteOpen(true)}
                   >
                     Delete

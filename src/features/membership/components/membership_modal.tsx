@@ -38,8 +38,8 @@ import {
   InfoCircle,
   LampCharge,
   MessageQuestion,
-  Trash,
 } from "iconsax-react";
+import { Trash2 } from "lucide-react";
 
 export interface Props {
   open?: boolean;
@@ -759,7 +759,7 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
                           className="text-error hover:bg-error/10"
                           onClick={() => removeEligibility(idx)}
                         >
-                          <Trash size={14} />
+                          <Trash2 size={14} />
                         </Button>
                       )}
                     </div>
@@ -814,7 +814,7 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
                           className="text-error hover:bg-error/10"
                           onClick={() => removeBenefit(idx)}
                         >
-                          <Trash size={14} />
+                          <Trash2 size={14} />
                         </Button>
                       )}
                     </div>
@@ -900,7 +900,7 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
                           className="text-error hover:bg-error/10"
                           onClick={() => removeJob(idx)}
                         >
-                          <Trash size={14} /> Remove
+                          <Trash2 size={14} /> Remove
                         </Button>
                       </div>
 
@@ -988,7 +988,7 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
                           className="text-error hover:bg-error/10"
                           onClick={() => removeHowHelps(idx)}
                         >
-                          <Trash size={14} /> Remove
+                          <Trash2 size={14} /> Remove
                         </Button>
                       </div>
 
@@ -1094,7 +1094,7 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
                           className="text-error hover:bg-error/10"
                           onClick={() => removeHighlight(idx)}
                         >
-                          <Trash size={14} />
+                          <Trash2 size={14} />
                         </Button>
                       </div>
                     ))}
@@ -1141,7 +1141,7 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
                             className="text-error hover:bg-error/10"
                             onClick={() => removeInfoCard(idx)}
                           >
-                            <Trash size={14} /> Remove
+                            <Trash2 size={14} /> Remove
                           </Button>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1208,7 +1208,7 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
                         className="text-error hover:bg-error/10"
                         onClick={() => removeQuestion(idx)}
                       >
-                        <Trash size={14} />
+                        <Trash2 size={14} />
                       </Button>
                     </div>
                   ))}

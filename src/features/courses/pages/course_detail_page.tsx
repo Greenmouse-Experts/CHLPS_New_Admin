@@ -16,7 +16,7 @@ import {
   useToast,
 } from "@/components/ui";
 import PageLoader from "@/components/PageLoader";
-import { ExternalLink, EyeOff } from "lucide-react";
+import { ExternalLink, EyeOff, Trash2 } from "lucide-react";
 import { RootState } from "@/lib/store/store";
 import CoursesRepository from "../domain/repository/courses_repository";
 import ProgramsRepository from "@/features/programs/domain/repository/programs_repository";
@@ -391,7 +391,7 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
               <Button
                 size="sm"
                 variant="danger"
-                leftIcon={<Trash size={14} />}
+                leftIcon={<Trash2 size={14} />}
                 onClick={() => setDeleteCourseOpen(true)}
               >
                 Delete
@@ -844,7 +844,7 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
                                   setDeleteContentId(section.id);
                                 }}
                               >
-                                <Trash size={14} />
+                                <Trash2 size={14} />
                               </Button>
                               <button
                                 type="button"
@@ -1035,7 +1035,7 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
                                             title="Delete lesson"
                                             onClick={() => setDeleteSubId(lesson.id)}
                                           >
-                                            <Trash size={14} />
+                                            <Trash2 size={14} />
                                           </Button>
                                         </div>
                                       </div>

@@ -3,7 +3,8 @@
 import React, { useRef, useState } from "react";
 import { cn } from "@/lib/tokens";
 import { useImageUpload } from "@/hooks/useImageUpload";
-import { GalleryAdd, Trash } from "iconsax-react";
+import { GalleryAdd } from "iconsax-react";
+import { Trash2 } from "lucide-react";
 
 export interface ImageUploadProps {
   label?: string;
@@ -151,7 +152,7 @@ export function ImageUpload({
               className="p-1.5 rounded-lg text-secondary hover:text-error hover:bg-error/10 transition-colors"
               title="Remove image"
             >
-              <Trash size={16} />
+              <Trash2 size={16} />
             </button>
           </div>
         ) : (

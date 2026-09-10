@@ -12,7 +12,7 @@ import SimpleInput from "@/components/inputs/SimpleInput";
 import SimpleTextArea from "@/components/inputs/SimpleTextArea";
 import LocalSelect from "@/components/inputs/LocalSelect";
 import { Button, RichTextField } from "@/components/ui";
-import { Trash } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import {
   CreateCoursePayload,
   CourseOutcome,
@@ -215,7 +215,7 @@ export const AddCourseModal = forwardRef<ModalHandle, Props>(
                         className="btn btn-square btn-ghost btn-sm text-error mt-2"
                         title="Remove outcome"
                       >
-                        <Trash size={16} />
+                        <Trash2 size={16} />
                       </button>
                     )}
                   </div>
