@@ -6,15 +6,14 @@ import {
   Button,
   ConfirmModal,
   Divider,
-  Modal,
   StatusBadge,
-  TextField,
 } from "@/components/ui";
 import CustomTable, { columnType } from "@/components/tables/CustomTable";
 import { Actions } from "@/components/tables/pop-up";
-import { AddCircle, SearchNormal1 } from "iconsax-react";
+import { AddCircle, Edit2, SearchNormal1 } from "iconsax-react";
 import { usePrograms } from "../domain/data/hooks/programs_hook";
 import { Program } from "../domain/data/response/programs_response";
+import { ProgramModal } from "../components/program_modal";
 import { formatDate } from "@/utils/helper/formate_date";
 
 export default function ProgramsPage() {
@@ -28,8 +27,6 @@ export default function ProgramsPage() {
   } = usePrograms();
   const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
-  const [title, setTitle] = useState("");
-  const [file, setFile] = useState<File | null>(null);
   const [edit, setEdit] = useState<Program | null>(null);
   const [confirm, setConfirm] = useState<{
     id: string;
@@ -39,7 +36,11 @@ export default function ProgramsPage() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return programs;
-    return programs.filter((p) => p.title.toLowerCase().includes(q));
+    return programs.filter(
+      (p) =>
+        p.title.toLowerCase().includes(q) ||
+        (p.description && p.description.toLowerCase().includes(q)),
+    );
   }, [programs, search]);
 
   const columns: columnType<Program>[] = [
@@ -54,16 +55,25 @@ export default function ProgramsPage() {
             className="w-14 h-10 object-cover rounded border border-base-300 shrink-0"
           />
         ) : (
-          <div className="w-14 h-10 rounded bg-base-200 text-xs text-base-content/60 flex items-center justify-center font-medium">
-            No image
+          <div className="w-14 h-10 rounded bg-base-200 text-xs text-base-content/60 flex items-center justify-center font-medium shrink-0">
+            No cover
           </div>
         ),
     },
     {
       key: "title",
-      label: "Title",
-      render: (v) => (
-        <span className="text-sm font-semibold text-base-content">{v}</span>
+      label: "Program",
+      render: (v, row) => (
+        <div className="min-w-[200px]">
+          <span className="text-sm font-semibold text-base-content block">
+            {v}
+          </span>
+          {row.description ? (
+            <p className="text-xs text-base-content/60 line-clamp-1 mt-0.5 max-w-md">
+              {row.description}
+            </p>
+          ) : null}
+        </div>
       ),
     },
     {
@@ -86,6 +96,11 @@ export default function ProgramsPage() {
     {
       key: "edit",
       label: "Edit",
+      render: () => (
+        <span className="text-primary font-medium flex items-center gap-1.5">
+          <Edit2 size={15} /> Edit
+        </span>
+      ),
       action: (row) => setEdit(row),
     },
     {
@@ -153,71 +168,27 @@ export default function ProgramsPage() {
         )}
       </div>
 
-      <Modal
+      {/* Add Program Modal */}
+      <ProgramModal
         open={addOpen}
         onClose={() => setAddOpen(false)}
-        title="Add New Program"
-        size="sm"
-      >
-        <div className="space-y-4">
-          <TextField
-            label="Program title"
-            required
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-          <div>
-            <p className="text-sm font-medium mb-1.5">Cover image</p>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            />
-          </div>
-          <Button
-            fullWidth
-            loading={busy}
-            onClick={async () => {
-              const ok = await createProgram(title, file);
-              if (ok) {
-                setAddOpen(false);
-                setTitle("");
-                setFile(null);
-              }
-            }}
-          >
-            Submit
-          </Button>
-        </div>
-      </Modal>
+        busy={busy}
+        onSubmit={async (payload) => {
+          return await createProgram(payload);
+        }}
+      />
 
-      <Modal
-        open={!!edit}
+      {/* Edit Program Modal */}
+      <ProgramModal
+        open={Boolean(edit)}
         onClose={() => setEdit(null)}
-        title="Edit Program"
-        size="sm"
-      >
-        <div className="space-y-4">
-          <TextField
-            label="Program title"
-            value={edit?.title ?? ""}
-            onChange={(e) =>
-              setEdit(edit ? { ...edit, title: e.target.value } : edit)
-            }
-          />
-          <Button
-            fullWidth
-            loading={busy}
-            onClick={async () => {
-              if (!edit) return;
-              const ok = await updateProgram(edit.id, { title: edit.title });
-              if (ok) setEdit(null);
-            }}
-          >
-            Save
-          </Button>
-        </div>
-      </Modal>
+        program={edit}
+        busy={busy}
+        onSubmit={async (payload) => {
+          if (!edit) return false;
+          return await updateProgram(edit.id, payload);
+        }}
+      />
 
       <ConfirmModal
         open={!!confirm}

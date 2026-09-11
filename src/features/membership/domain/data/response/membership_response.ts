@@ -87,6 +87,8 @@ export interface Membership {
   registrationEndDate?: string | null;
   status: MembershipStatus;
   image?: string | null;
+  banner?: string | null;
+  bannerText?: string;
   membersCount?: number;
   membersThisMonth?: number;
   amountPaid?: number;

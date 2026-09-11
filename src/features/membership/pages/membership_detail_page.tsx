@@ -407,6 +407,24 @@ export default function MembershipDetailPage({
                 {activeTab === "overview" && (
                   <div className="grid lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 space-y-6">
+                      {/* Promotional Hero Banner */}
+                      {currentPlan.banner && (
+                        <div className="relative rounded-xl overflow-hidden border border-[#E7E9EB] shadow-xs max-h-52 bg-base-200">
+                          <img
+                            src={currentPlan.banner}
+                            alt=""
+                            className="w-full h-48 md:h-52 object-cover"
+                          />
+                          {currentPlan.bannerText && (
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-transparent flex items-end p-5">
+                              <p className="text-white text-base md:text-lg font-bold tracking-tight drop-shadow-md">
+                                {currentPlan.bannerText}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       {/* Basic Info */}
                       <div className="bg-white rounded-xl border border-[#E7E9EB] p-6 shadow-sm space-y-5">
                         <div className="flex items-start gap-4">

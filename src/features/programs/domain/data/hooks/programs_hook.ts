@@ -7,6 +7,7 @@ import { RootState } from "@/lib/store/store";
 import ProgramsRepository from "../../repository/programs_repository";
 import UploadRepository from "@/features/uploads/domain/repository/upload_repository";
 import {
+  CreateProgramPayload,
   Program,
   UpdateProgramPayload,
 } from "../response/programs_response";
@@ -35,10 +36,13 @@ export function usePrograms() {
     fetchPrograms();
   }, [fetchPrograms]);
 
-  const createProgram = async (title: string, file?: File | null) => {
+  const createProgram = async (
+    payload: CreateProgramPayload,
+    file?: File | null,
+  ) => {
     try {
       setBusy(true);
-      let coverImage: string | null = null;
+      let coverImage: string | null = payload.coverImage || null;
       if (file) {
         const up = await uploads.upload("image", file);
         if (!up.success) {
@@ -47,7 +51,10 @@ export function usePrograms() {
         }
         coverImage = up.url;
       }
-      const res = await repo.create({ title, coverImage });
+      const res = await repo.create({
+        ...payload,
+        coverImage,
+      });
       if (res.success) {
         toast(res.message, "success");
         await fetchPrograms();
@@ -60,10 +67,26 @@ export function usePrograms() {
     }
   };
 
-  const updateProgram = async (id: string, payload: UpdateProgramPayload) => {
+  const updateProgram = async (
+    id: string,
+    payload: UpdateProgramPayload,
+    file?: File | null,
+  ) => {
     try {
       setBusy(true);
-      const res = await repo.update(id, payload);
+      let coverImage = payload.coverImage;
+      if (file) {
+        const up = await uploads.upload("image", file);
+        if (!up.success) {
+          toast(up.message, "danger");
+          return false;
+        }
+        coverImage = up.url;
+      }
+      const res = await repo.update(id, {
+        ...payload,
+        ...(coverImage !== undefined ? { coverImage } : {}),
+      });
       if (res.success) {
         toast(res.message, "success");
         await fetchPrograms();

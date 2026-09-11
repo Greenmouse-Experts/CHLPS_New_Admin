@@ -60,6 +60,8 @@ interface FormValues {
   benefits: { value: string }[];
   requiredDocuments: string[];
   image?: string | null;
+  banner?: string | null;
+  bannerText?: string;
   status: MembershipStatus;
 
   // Career & Value Highlights
@@ -162,14 +164,16 @@ function getFormDefaults(membership?: Membership | null): FormValues {
     ),
     requiredDocuments: membership?.requiredDocuments ?? [],
     image: membership?.image ?? null,
+    banner: membership?.banner ?? null,
+    bannerText: membership?.bannerText ?? "",
     status: membership?.status ?? "draft",
 
-    careerPathways:
-      (membership?.careerPathways?.length ? membership.careerPathways : []).map(
-        (v: unknown) => ({
-          value: typeof v === "string" ? v : (v as { value?: string })?.value || "",
-        }),
-      ),
+    careerPathways: (membership?.careerPathways?.length
+      ? membership.careerPathways
+      : []
+    ).map((v: unknown) => ({
+      value: typeof v === "string" ? v : (v as { value?: string })?.value || "",
+    })),
 
     jobOpportunities:
       membership?.jobOpportunities?.map((item) => ({
@@ -241,6 +245,7 @@ export default function MembershipEditorPage({
   const autoRenewal = watch("autoRenewal");
   const watchRequiredDocs = watch("requiredDocuments") || [];
   const watchImage = watch("image");
+  const watchBanner = watch("banner");
   const isLifetime = currentDuration === "Lifetime";
   const showRenewal = !isLifetime && autoRenewal;
 
@@ -370,9 +375,7 @@ export default function MembershipEditorPage({
       return;
     }
 
-    const benefits = values.benefits
-      .map((b) => b.value.trim())
-      .filter(Boolean);
+    const benefits = values.benefits.map((b) => b.value.trim()).filter(Boolean);
     if (benefits.length === 0) {
       setActiveTab("criteria");
       setError("benefits", {
@@ -471,11 +474,7 @@ export default function MembershipEditorPage({
       currency: values.currency,
       duration: values.duration,
       autoRenewal: isLifetime ? false : values.autoRenewal,
-      renewalPrice: isLifetime
-        ? null
-        : values.autoRenewal
-          ? renewalNum
-          : null,
+      renewalPrice: isLifetime ? null : values.autoRenewal ? renewalNum : null,
       renewalPeriod:
         isLifetime || !values.autoRenewal ? null : values.renewalPeriod,
       benefits,
@@ -484,6 +483,8 @@ export default function MembershipEditorPage({
         : {}),
       status: values.status,
       image: values.image || null,
+      banner: values.banner || null,
+      bannerText: values.bannerText?.trim() || undefined,
       careerPathways,
       jobOpportunities,
       howMembershipHelps,
@@ -517,7 +518,11 @@ export default function MembershipEditorPage({
     }
   };
 
-  const handleNextTab = () => {
+  const handleNextTab = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     const currentIndex = TABS.findIndex((t) => t.key === activeTab);
     if (currentIndex < TABS.length - 1) {
       setActiveTab(TABS[currentIndex + 1].key);
@@ -525,7 +530,11 @@ export default function MembershipEditorPage({
     }
   };
 
-  const handlePrevTab = () => {
+  const handlePrevTab = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     const currentIndex = TABS.findIndex((t) => t.key === activeTab);
     if (currentIndex > 0) {
       setActiveTab(TABS[currentIndex - 1].key);
@@ -546,7 +555,7 @@ export default function MembershipEditorPage({
           refetch: loadMembership,
         }}
       >
-        <div className="space-y-6 max-w-5xl mx-auto pb-16">
+        <div className="space-y-6  mx-auto pb-16">
           {/* Top Navigation & Action Header */}
           <div className="flex flex-wrap items-center justify-between gap-4 bg-white rounded-xl border border-[#E7E9EB] p-4 sm:p-5 shadow-sm">
             <div className="flex items-center gap-3">
@@ -574,7 +583,8 @@ export default function MembershipEditorPage({
                   )}
                 </div>
                 <p className="text-xs text-base-content/60 mt-0.5">
-                  Configure pricing, eligibility, perks, career roles, and application requirements.
+                  Configure pricing, eligibility, perks, career roles, and
+                  application requirements.
                 </p>
               </div>
             </div>
@@ -617,19 +627,26 @@ export default function MembershipEditorPage({
             <form
               id="membership-editor-form"
               onSubmit={handleSubmit(onFormSubmit)}
+              onKeyDown={(e) => {
+                if (
+                  e.key === "Enter" &&
+                  (e.target as HTMLElement).tagName !== "TEXTAREA"
+                ) {
+                  e.preventDefault();
+                }
+              }}
               className="space-y-6"
             >
               {/* TAB 1: General & Pricing */}
-              <div
-                className={activeTab === "general" ? "space-y-6" : "hidden"}
-              >
+              <div className={activeTab === "general" ? "space-y-6" : "hidden"}>
                 <div className="bg-white rounded-xl border border-[#E7E9EB] p-6 shadow-sm space-y-5">
                   <div>
                     <h2 className="text-base font-bold text-base-content">
                       Basic Information
                     </h2>
                     <p className="text-xs text-base-content/60">
-                      General identifier and descriptive copy for this membership tier.
+                      General identifier and descriptive copy for this
+                      membership tier.
                     </p>
                   </div>
 
@@ -699,7 +716,8 @@ export default function MembershipEditorPage({
                       Pricing & Billing Cycle
                     </h2>
                     <p className="text-xs text-base-content/60">
-                      Set enrolment rate, currency, duration, and optional renewal terms.
+                      Set enrolment rate, currency, duration, and optional
+                      renewal terms.
                     </p>
                   </div>
 
@@ -781,7 +799,8 @@ export default function MembershipEditorPage({
                               Recurring Auto-Renewal
                             </p>
                             <p className="text-xs text-base-content/60">
-                              Enable automatic recurring billing for enrolled members when expired.
+                              Enable automatic recurring billing for enrolled
+                              members when expired.
                             </p>
                           </div>
                           <Toggle
@@ -830,24 +849,60 @@ export default function MembershipEditorPage({
                   </div>
                 </div>
 
-                {/* Media Card */}
-                <div className="bg-white rounded-xl border border-[#E7E9EB] p-6 shadow-sm space-y-4">
+                {/* Media & Promotional Banners */}
+                <div className="bg-white rounded-xl border border-[#E7E9EB] p-6 shadow-sm space-y-5">
                   <div>
                     <h2 className="text-base font-bold text-base-content">
-                      Media Banner
+                      Media & Promotional Banners
                     </h2>
                     <p className="text-xs text-base-content/60">
-                      Upload banner or badge image for this membership tier to Cloudinary.
+                      Upload badge icons, hero banners, and promotional headline text for this membership plan.
                     </p>
                   </div>
-                  <ImageUpload
-                    value={watchImage || null}
-                    onChange={(url) =>
-                      setValue("image", url, { shouldDirty: true })
-                    }
-                    folder="chlps_memberships"
-                    helperText="Upload banner or icon image for this membership tier to Cloudinary."
-                  />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Badge / Thumbnail Image */}
+                    <div className="space-y-2">
+                      <label className="block text-xs font-semibold text-base-content/80">
+                        Membership Badge / Card Image
+                      </label>
+                      <ImageUpload
+                        value={watchImage || null}
+                        onChange={(url) =>
+                          setValue("image", url, { shouldDirty: true })
+                        }
+                        folder="chlps_memberships"
+                        helperText="Badge or icon image displayed on membership cards."
+                      />
+                    </div>
+
+                    {/* Wide Promotional Banner */}
+                    <div className="space-y-2">
+                      <label className="block text-xs font-semibold text-base-content/80">
+                        Promotional Hero Banner
+                      </label>
+                      <ImageUpload
+                        value={watchBanner || null}
+                        onChange={(url) =>
+                          setValue("banner", url, { shouldDirty: true })
+                        }
+                        folder="chlps_memberships"
+                        helperText="Recommended: Wide 16:9 banner for promotional displays."
+                      />
+                    </div>
+                  </div>
+
+                  {/* Banner CTA Text */}
+                  <div>
+                    <SimpleInput
+                      label="Banner Headline / CTA Text"
+                      placeholder="e.g. Join the CLPA Program Today"
+                      {...register("bannerText")}
+                    />
+                    <p className="text-xs text-base-content/50 mt-1">
+                      Promotional call-to-action text displayed with the hero banner.
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -861,7 +916,8 @@ export default function MembershipEditorPage({
                     <div>
                       <FieldLabel required>Eligibility Criteria</FieldLabel>
                       <p className="text-xs text-base-content/60">
-                        Requirements applicants must meet to qualify for this tier.
+                        Requirements applicants must meet to qualify for this
+                        tier.
                       </p>
                     </div>
                     <Button
@@ -907,7 +963,9 @@ export default function MembershipEditorPage({
                     ))}
                   </div>
                   {errors.eligibilityCriteria && (
-                    <FieldError>{errors.eligibilityCriteria.message}</FieldError>
+                    <FieldError>
+                      {errors.eligibilityCriteria.message}
+                    </FieldError>
                   )}
                 </div>
 
@@ -919,7 +977,8 @@ export default function MembershipEditorPage({
                       <div>
                         <FieldLabel required>Benefits & Privileges</FieldLabel>
                         <p className="text-xs text-base-content/60">
-                          What enrolled members receive (resources, discounts, community access).
+                          What enrolled members receive (resources, discounts,
+                          community access).
                         </p>
                       </div>
                     </div>
@@ -977,7 +1036,8 @@ export default function MembershipEditorPage({
                     <div>
                       <FieldLabel>Required Documents for Applicants</FieldLabel>
                       <p className="text-xs text-base-content/60">
-                        Select all verification files applicants must submit before approval.
+                        Select all verification files applicants must submit
+                        before approval.
                       </p>
                     </div>
                   </div>
@@ -1021,7 +1081,8 @@ export default function MembershipEditorPage({
                           Career Pathways & Progression
                         </h2>
                         <p className="text-xs text-base-content/60">
-                          Certificates, credentials, or advanced qualifications members can progress to.
+                          Certificates, credentials, or advanced qualifications
+                          members can progress to.
                         </p>
                       </div>
                     </div>
@@ -1063,7 +1124,8 @@ export default function MembershipEditorPage({
 
                   {pathwayFields.length === 0 && (
                     <p className="text-xs text-secondary italic py-3 text-center bg-base-200/20 rounded-lg">
-                      No career pathways added. Click &quot;Add Pathway&quot; to outline professional advancement steps.
+                      No career pathways added. Click &quot;Add Pathway&quot; to
+                      outline professional advancement steps.
                     </p>
                   )}
                 </div>
@@ -1077,7 +1139,8 @@ export default function MembershipEditorPage({
                           Job & Career Opportunities
                         </h2>
                         <p className="text-xs text-base-content/60">
-                          Specific job roles, placements, or industry titles accessible through this membership.
+                          Specific job roles, placements, or industry titles
+                          accessible through this membership.
                         </p>
                       </div>
                     </div>
@@ -1085,9 +1148,7 @@ export default function MembershipEditorPage({
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() =>
-                        appendJob({ title: "", description: "" })
-                      }
+                      onClick={() => appendJob({ title: "", description: "" })}
                       leftIcon={<Plus size={14} />}
                     >
                       Add Opportunity
@@ -1128,9 +1189,7 @@ export default function MembershipEditorPage({
                             label="Description"
                             placeholder="Access to entry-level legal associate opportunities..."
                             rows={2}
-                            {...register(
-                              `jobOpportunities.${idx}.description`,
-                            )}
+                            {...register(`jobOpportunities.${idx}.description`)}
                           />
                         </div>
                       </div>
@@ -1138,7 +1197,8 @@ export default function MembershipEditorPage({
 
                     {jobFields.length === 0 && (
                       <p className="text-xs text-secondary italic py-3 text-center bg-base-200/20 rounded-lg">
-                        No career opportunities added. Click &quot;Add Opportunity&quot; to include roles.
+                        No career opportunities added. Click &quot;Add
+                        Opportunity&quot; to include roles.
                       </p>
                     )}
                   </div>
@@ -1154,7 +1214,8 @@ export default function MembershipEditorPage({
                           How Membership Helps
                         </h2>
                         <p className="text-xs text-base-content/60">
-                          Highlight tangible ways this tier accelerates career progression and knowledge.
+                          Highlight tangible ways this tier accelerates career
+                          progression and knowledge.
                         </p>
                       </div>
                     </div>
@@ -1218,7 +1279,8 @@ export default function MembershipEditorPage({
 
                     {howHelpsFields.length === 0 && (
                       <p className="text-xs text-secondary italic py-3 text-center bg-base-200/20 rounded-lg">
-                        No support items added. Click &quot;Add Help Item&quot; to showcase support highlights.
+                        No support items added. Click &quot;Add Help Item&quot;
+                        to showcase support highlights.
                       </p>
                     )}
                   </div>
@@ -1238,7 +1300,8 @@ export default function MembershipEditorPage({
                         &quot;Why Join Now?&quot; Call to Action
                       </h2>
                       <p className="text-xs text-base-content/60">
-                        Compelling motivational copy, bullet points, and quick information cards.
+                        Compelling motivational copy, bullet points, and quick
+                        information cards.
                       </p>
                     </div>
                   </div>
@@ -1266,7 +1329,8 @@ export default function MembershipEditorPage({
                           Bullet Highlights
                         </p>
                         <p className="text-xs text-base-content/60">
-                          Short bullet point statements displayed with checkmarks.
+                          Short bullet point statements displayed with
+                          checkmarks.
                         </p>
                       </div>
                       <Button
@@ -1319,7 +1383,8 @@ export default function MembershipEditorPage({
                           Information Cards
                         </p>
                         <p className="text-xs text-base-content/60">
-                          Important highlights like application fees, turnaround time, or entry periods.
+                          Important highlights like application fees, turnaround
+                          time, or entry periods.
                         </p>
                       </div>
                       <Button
@@ -1389,7 +1454,8 @@ export default function MembershipEditorPage({
                           Application Questions
                         </h2>
                         <p className="text-xs text-base-content/60">
-                          Screening questions applicants must answer during registration.
+                          Screening questions applicants must answer during
+                          registration.
                         </p>
                       </div>
                     </div>
@@ -1430,7 +1496,8 @@ export default function MembershipEditorPage({
 
                   {questionFields.length === 0 && (
                     <p className="text-xs text-secondary italic py-2">
-                      No custom questions added. Click &quot;Add Question&quot; to define screening prompts.
+                      No custom questions added. Click &quot;Add Question&quot;
+                      to define screening prompts.
                     </p>
                   )}
                 </div>
@@ -1453,18 +1520,26 @@ export default function MembershipEditorPage({
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {activeTab !== "why_join" ? (
+                  {activeTab !== "why_join" && (
                     <Button
+                      key="btn-next-tab"
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={handleNextTab}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleNextTab(e);
+                      }}
                       rightIcon={<ChevronRight size={16} />}
                     >
                       Next Tab
                     </Button>
-                  ) : (
+                  )}
+
+                  {activeTab === "why_join" && (
                     <Button
+                      key="btn-submit-membership"
                       type="submit"
                       loading={isSaving}
                       onClick={handleSubmit(onFormSubmit)}

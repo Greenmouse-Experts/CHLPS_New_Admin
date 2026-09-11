@@ -66,6 +66,8 @@ interface FormValues {
   benefits: { value: string }[];
   requiredDocuments: string[];
   image?: string | null;
+  banner?: string | null;
+  bannerText?: string;
   status: MembershipStatus;
 
   // Career & Value Highlights
@@ -161,6 +163,8 @@ function getFormDefaults(membership?: Membership | null): FormValues {
     ),
     requiredDocuments: membership?.requiredDocuments ?? [],
     image: membership?.image ?? null,
+    banner: membership?.banner ?? null,
+    bannerText: membership?.bannerText ?? "",
     status: membership?.status ?? "draft",
 
     careerPathways:
@@ -249,6 +253,7 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
     const autoRenewal = watch("autoRenewal");
     const watchRequiredDocs = watch("requiredDocuments") || [];
     const watchImage = watch("image");
+    const watchBanner = watch("banner");
     const isLifetime = currentDuration === "Lifetime";
     const showRenewal = !isLifetime && autoRenewal;
 
@@ -469,6 +474,8 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
           : {}),
         status: values.status,
         image: values.image || null,
+        banner: values.banner || null,
+        bannerText: values.bannerText?.trim() || undefined,
         careerPathways,
         jobOpportunities,
         howMembershipHelps,
@@ -713,17 +720,39 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
                     </>
                   )}
 
-                  {/* Cloudinary Image Upload */}
-                  <div className="sm:col-span-2">
-                    <ImageUpload
-                      label="Membership Image / Banner"
-                      value={watchImage || null}
-                      onChange={(url) =>
-                        setValue("image", url, { shouldDirty: true })
-                      }
-                      folder="chlps_memberships"
-                      helperText="Upload banner or icon image for this membership tier to Cloudinary."
-                    />
+                  {/* Cloudinary Image & Banner Upload */}
+                  <div className="sm:col-span-2 space-y-4 pt-2 border-t border-base-200">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <ImageUpload
+                          label="Membership Badge / Card Image"
+                          value={watchImage || null}
+                          onChange={(url) =>
+                            setValue("image", url, { shouldDirty: true })
+                          }
+                          folder="chlps_memberships"
+                          helperText="Badge image displayed on membership cards."
+                        />
+                      </div>
+                      <div>
+                        <ImageUpload
+                          label="Promotional Hero Banner"
+                          value={watchBanner || null}
+                          onChange={(url) =>
+                            setValue("banner", url, { shouldDirty: true })
+                          }
+                          folder="chlps_memberships"
+                          helperText="Recommended: Wide 16:9 promotional banner."
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <SimpleInput
+                        label="Banner Headline / CTA Text"
+                        placeholder="e.g. Join the CLPA Program Today"
+                        {...register("bannerText")}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
