@@ -16,7 +16,15 @@ import {
   useToast,
 } from "@/components/ui";
 import PageLoader from "@/components/PageLoader";
-import { Award, ExternalLink, EyeOff, GraduationCap, HelpCircle, Trash2 } from "lucide-react";
+import {
+  Award,
+  ExternalLink,
+  EyeOff,
+  GraduationCap,
+  HelpCircle,
+  Text,
+  Trash2,
+} from "lucide-react";
 import { RootState } from "@/lib/store/store";
 import CoursesRepository from "../domain/repository/courses_repository";
 import ProgramsRepository from "@/features/programs/domain/repository/programs_repository";
@@ -541,16 +549,20 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
                     {/* Full Description */}
                     <div className="bg-white rounded-2xl border border-base-300 p-6 shadow-xs space-y-3">
                       <div className="flex items-center gap-2">
-                        <NoteText size={18} className="text-primary" />
+                        <Text size={18} className="text-primary" />
                         <h3 className="text-base font-bold text-base-content">
                           Course Description
                         </h3>
                       </div>
                       <Divider />
-                      <div className="text-sm text-base-content leading-relaxed whitespace-pre-line">
-                        {course.fullDesc ||
-                          "No detailed description available."}
-                      </div>
+                      <div
+                        className="text-sm text-base-content leading-relaxed whitespace-pre-line"
+                        dangerouslySetInnerHTML={{
+                          __html:
+                            course.fullDesc ||
+                            "No detailed description available.",
+                        }}
+                      ></div>
                     </div>
 
                     {/* Course Outcomes */}
@@ -610,21 +622,24 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
                           </div>
                           <Divider />
                           <div className="grid grid-cols-1 gap-3">
-                            {course.certificationBenefits.map((benefit: unknown, idx: number) => (
-                              <div
-                                key={idx}
-                                className="flex items-start gap-3 p-3.5 rounded-xl border border-amber-200/60 bg-amber-50/30"
-                              >
-                                <div className="w-6 h-6 rounded-full bg-amber-500/15 text-amber-700 flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">
-                                  {idx + 1}
+                            {course.certificationBenefits.map(
+                              (benefit: unknown, idx: number) => (
+                                <div
+                                  key={idx}
+                                  className="flex items-start gap-3 p-3.5 rounded-xl border border-amber-200/60 bg-amber-50/30"
+                                >
+                                  <div className="w-6 h-6 rounded-full bg-amber-500/15 text-amber-700 flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">
+                                    {idx + 1}
+                                  </div>
+                                  <p className="text-sm font-medium text-base-content leading-relaxed">
+                                    {typeof benefit === "string"
+                                      ? benefit
+                                      : (benefit as { value?: string })
+                                          ?.value || ""}
+                                  </p>
                                 </div>
-                                <p className="text-sm font-medium text-base-content leading-relaxed">
-                                  {typeof benefit === "string"
-                                    ? benefit
-                                    : (benefit as { value?: string })?.value || ""}
-                                </p>
-                              </div>
-                            ))}
+                              ),
+                            )}
                           </div>
                         </div>
                       )}
@@ -634,28 +649,34 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
                       course.entryRequirements.length > 0 && (
                         <div className="bg-white rounded-2xl border border-base-300 p-6 shadow-xs space-y-4">
                           <div className="flex items-center gap-2">
-                            <GraduationCap size={18} className="text-blue-600" />
+                            <GraduationCap
+                              size={18}
+                              className="text-blue-600"
+                            />
                             <h3 className="text-base font-bold text-base-content">
                               Entry Requirements & Prerequisites
                             </h3>
                           </div>
                           <Divider />
                           <div className="grid grid-cols-1 gap-3">
-                            {course.entryRequirements.map((req: unknown, idx: number) => (
-                              <div
-                                key={idx}
-                                className="flex items-start gap-3 p-3.5 rounded-xl border border-blue-200/60 bg-blue-50/30"
-                              >
-                                <div className="w-6 h-6 rounded-full bg-blue-500/15 text-blue-700 flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">
-                                  {idx + 1}
+                            {course.entryRequirements.map(
+                              (req: unknown, idx: number) => (
+                                <div
+                                  key={idx}
+                                  className="flex items-start gap-3 p-3.5 rounded-xl border border-blue-200/60 bg-blue-50/30"
+                                >
+                                  <div className="w-6 h-6 rounded-full bg-blue-500/15 text-blue-700 flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">
+                                    {idx + 1}
+                                  </div>
+                                  <p className="text-sm font-medium text-base-content leading-relaxed">
+                                    {typeof req === "string"
+                                      ? req
+                                      : (req as { value?: string })?.value ||
+                                        ""}
+                                  </p>
                                 </div>
-                                <p className="text-sm font-medium text-base-content leading-relaxed">
-                                  {typeof req === "string"
-                                    ? req
-                                    : (req as { value?: string })?.value || ""}
-                                </p>
-                              </div>
-                            ))}
+                              ),
+                            )}
                           </div>
                         </div>
                       )}
@@ -672,25 +693,28 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
                           </div>
                           <Divider />
                           <div className="space-y-2.5">
-                            {course.applicationQuestions.map((q: unknown, idx: number) => {
-                              const questionText =
-                                typeof q === "string"
-                                  ? q
-                                  : (q as { question?: string })?.question || "";
-                              return (
-                                <div
-                                  key={idx}
-                                  className="flex items-start gap-3 p-3.5 rounded-xl border border-base-200 bg-base-100"
-                                >
-                                  <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">
-                                    {idx + 1}
+                            {course.applicationQuestions.map(
+                              (q: unknown, idx: number) => {
+                                const questionText =
+                                  typeof q === "string"
+                                    ? q
+                                    : (q as { question?: string })?.question ||
+                                      "";
+                                return (
+                                  <div
+                                    key={idx}
+                                    className="flex items-start gap-3 p-3.5 rounded-xl border border-base-200 bg-base-100"
+                                  >
+                                    <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">
+                                      {idx + 1}
+                                    </div>
+                                    <p className="text-sm font-medium text-base-content">
+                                      {questionText}
+                                    </p>
                                   </div>
-                                  <p className="text-sm font-medium text-base-content">
-                                    {questionText}
-                                  </p>
-                                </div>
-                              );
-                            })}
+                                );
+                              },
+                            )}
                           </div>
                         </div>
                       )}
@@ -958,9 +982,11 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
                               {sectionSubs.length > 0 ? (
                                 <div className="space-y-2.5">
                                   {sectionSubs.map((lesson, lessonIdx) => {
-                                    const isAssessment = lesson.mediaType === "assessment";
+                                    const isAssessment =
+                                      lesson.mediaType === "assessment";
                                     const hasMedia = Boolean(lesson.media);
-                                    const isClickable = isAssessment || hasMedia;
+                                    const isClickable =
+                                      isAssessment || hasMedia;
 
                                     return (
                                       <div
@@ -978,21 +1004,35 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
                                             className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 border ${
                                               lesson.mediaType === "video"
                                                 ? "bg-blue-50 text-blue-600 border-blue-200/60"
-                                                : lesson.mediaType === "document"
-                                                ? "bg-purple-50 text-purple-600 border-purple-200/60"
-                                                : lesson.mediaType === "assessment"
-                                                ? "bg-amber-50 text-amber-600 border-amber-200/60"
-                                                : lesson.mediaType === "audio"
-                                                ? "bg-emerald-50 text-emerald-600 border-emerald-200/60"
-                                                : "bg-base-200 text-secondary border-base-300"
+                                                : lesson.mediaType ===
+                                                    "document"
+                                                  ? "bg-purple-50 text-purple-600 border-purple-200/60"
+                                                  : lesson.mediaType ===
+                                                      "assessment"
+                                                    ? "bg-amber-50 text-amber-600 border-amber-200/60"
+                                                    : lesson.mediaType ===
+                                                        "audio"
+                                                      ? "bg-emerald-50 text-emerald-600 border-emerald-200/60"
+                                                      : "bg-base-200 text-secondary border-base-300"
                                             }`}
                                           >
-                                            {lesson.mediaType === "video" && <VideoPlay size={18} />}
-                                            {lesson.mediaType === "document" && <DocumentText size={18} />}
-                                            {lesson.mediaType === "assessment" && <MessageQuestion size={18} />}
+                                            {lesson.mediaType === "video" && (
+                                              <VideoPlay size={18} />
+                                            )}
+                                            {lesson.mediaType ===
+                                              "document" && (
+                                              <DocumentText size={18} />
+                                            )}
+                                            {lesson.mediaType ===
+                                              "assessment" && (
+                                              <MessageQuestion size={18} />
+                                            )}
                                             {lesson.mediaType !== "video" &&
                                               lesson.mediaType !== "document" &&
-                                              lesson.mediaType !== "assessment" && <NoteText size={18} />}
+                                              lesson.mediaType !==
+                                                "assessment" && (
+                                                <NoteText size={18} />
+                                              )}
                                           </div>
 
                                           {/* Title & metadata */}
@@ -1024,7 +1064,10 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
                                                   title="Click to preview media in new tab"
                                                 >
                                                   {lesson.title}
-                                                  <ExternalLink size={12} className="opacity-50 inline shrink-0" />
+                                                  <ExternalLink
+                                                    size={12}
+                                                    className="opacity-50 inline shrink-0"
+                                                  />
                                                 </a>
                                               ) : (
                                                 <span
@@ -1042,11 +1085,13 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
                                                 className={`px-1.5 py-0.5 rounded text-[11px] font-semibold capitalize border ${
                                                   lesson.mediaType === "video"
                                                     ? "bg-blue-50 text-blue-700 border-blue-200"
-                                                    : lesson.mediaType === "document"
-                                                    ? "bg-purple-50 text-purple-700 border-purple-200"
-                                                    : lesson.mediaType === "assessment"
-                                                    ? "bg-amber-50 text-amber-700 border-amber-200"
-                                                    : "bg-base-200 text-base-content/70 border-base-300"
+                                                    : lesson.mediaType ===
+                                                        "document"
+                                                      ? "bg-purple-50 text-purple-700 border-purple-200"
+                                                      : lesson.mediaType ===
+                                                          "assessment"
+                                                        ? "bg-amber-50 text-amber-700 border-amber-200"
+                                                        : "bg-base-200 text-base-content/70 border-base-300"
                                                 }`}
                                               >
                                                 {lesson.mediaType}
@@ -1066,7 +1111,9 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
                                               )}
                                               {!isAssessment && hasMedia && (
                                                 <span className="text-emerald-700 text-[11px] font-medium flex items-center gap-1">
-                                                  • <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" /> Media attached
+                                                  •{" "}
+                                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />{" "}
+                                                  Media attached
                                                 </span>
                                               )}
                                               {!isAssessment && !hasMedia && (
@@ -1106,7 +1153,10 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
                                             >
                                               <Eye size={13} />
                                               Preview Media
-                                              <ExternalLink size={12} className="opacity-60" />
+                                              <ExternalLink
+                                                size={12}
+                                                className="opacity-60"
+                                              />
                                             </a>
                                           )}
 
@@ -1115,7 +1165,10 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
                                               className="px-2.5 py-1 text-[11px] rounded-lg bg-base-200/70 text-secondary border border-dashed border-base-300 flex items-center gap-1.5 cursor-not-allowed select-none"
                                               title="This lesson does not have a media file uploaded"
                                             >
-                                              <EyeOff size={12} className="opacity-50" />
+                                              <EyeOff
+                                                size={12}
+                                                className="opacity-50"
+                                              />
                                               No Media
                                             </span>
                                           )}
@@ -1125,7 +1178,9 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
                                             variant="ghost"
                                             className="text-error hover:bg-error/10 hover:border-error/20"
                                             title="Delete lesson"
-                                            onClick={() => setDeleteSubId(lesson.id)}
+                                            onClick={() =>
+                                              setDeleteSubId(lesson.id)
+                                            }
                                           >
                                             <Trash2 size={14} />
                                           </Button>
@@ -1482,7 +1537,6 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
           }
         }}
       />
-
     </DashboardLayout>
   );
 }

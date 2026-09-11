@@ -71,12 +71,10 @@ interface FormValues {
   // Career & Value Highlights
   careerPathways: { value: string }[];
   jobOpportunities: {
-    iconUrl?: string;
     title: string;
     description: string;
   }[];
   howMembershipHelps: {
-    iconUrl?: string;
     title: string;
     description: string;
   }[];
@@ -174,14 +172,12 @@ function getFormDefaults(membership?: Membership | null): FormValues {
 
     jobOpportunities:
       membership?.jobOpportunities?.map((item) => ({
-        iconUrl: item.iconUrl || "",
         title: item.title || "",
         description: item.description || "",
       })) ?? [],
 
     howMembershipHelps:
       membership?.howMembershipHelps?.map((item) => ({
-        iconUrl: item.iconUrl || "",
         title: item.title || "",
         description: item.description || "",
       })) ?? [],
@@ -401,7 +397,6 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
       // Filter and sanitize new fields
       const jobOpportunities = (values.jobOpportunities || [])
         .map((j) => ({
-          iconUrl: j.iconUrl?.trim() || undefined,
           title: j.title.trim(),
           description: j.description.trim(),
         }))
@@ -409,7 +404,6 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
 
       const howMembershipHelps = (values.howMembershipHelps || [])
         .map((h) => ({
-          iconUrl: h.iconUrl?.trim() || undefined,
           title: h.title.trim(),
           description: h.description.trim(),
         }))
@@ -946,7 +940,7 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
                       variant="ghost"
                       size="sm"
                       onClick={() =>
-                        appendJob({ title: "", description: "", iconUrl: "" })
+                        appendJob({ title: "", description: "" })
                       }
                       leftIcon={<AddCircle size={14} />}
                     >
@@ -977,29 +971,18 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
                         </Button>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <SimpleInput
-                            label="Role Title"
-                            placeholder="e.g. Legal Associate Roles"
-                            {...register(`jobOpportunities.${idx}.title`)}
-                          />
-                        </div>
-                        <div>
-                          <SimpleInput
-                            label="Icon URL (Optional)"
-                            placeholder="e.g. https://cdn.example.com/icons/job.svg"
-                            {...register(`jobOpportunities.${idx}.iconUrl`)}
-                          />
-                        </div>
-                        <div className="sm:col-span-2">
-                          <SimpleTextArea
-                            label="Description"
-                            placeholder="Access to entry-level legal associate opportunities..."
-                            rows={2}
-                            {...register(`jobOpportunities.${idx}.description`)}
-                          />
-                        </div>
+                      <div className="space-y-3">
+                        <SimpleInput
+                          label="Role Title"
+                          placeholder="e.g. Legal Associate Roles"
+                          {...register(`jobOpportunities.${idx}.title`)}
+                        />
+                        <SimpleTextArea
+                          label="Description"
+                          placeholder="Access to entry-level legal associate opportunities..."
+                          rows={2}
+                          {...register(`jobOpportunities.${idx}.description`)}
+                        />
                       </div>
                     </div>
                   ))}
@@ -1033,7 +1016,6 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
                         appendHowHelps({
                           title: "",
                           description: "",
-                          iconUrl: "",
                         })
                       }
                       leftIcon={<AddCircle size={14} />}
@@ -1065,31 +1047,20 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
                         </Button>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <SimpleInput
-                            label="Title"
-                            placeholder="e.g. Networking & Mentorship"
-                            {...register(`howMembershipHelps.${idx}.title`)}
-                          />
-                        </div>
-                        <div>
-                          <SimpleInput
-                            label="Icon URL (Optional)"
-                            placeholder="e.g. https://cdn.example.com/icons/help.svg"
-                            {...register(`howMembershipHelps.${idx}.iconUrl`)}
-                          />
-                        </div>
-                        <div className="sm:col-span-2">
-                          <SimpleTextArea
-                            label="Description"
-                            placeholder="Describe how this feature assists the applicant..."
-                            rows={2}
-                            {...register(
-                              `howMembershipHelps.${idx}.description`,
-                            )}
-                          />
-                        </div>
+                      <div className="space-y-3">
+                        <SimpleInput
+                          label="Title"
+                          placeholder="e.g. Networking & Mentorship"
+                          {...register(`howMembershipHelps.${idx}.title`)}
+                        />
+                        <SimpleTextArea
+                          label="Description"
+                          placeholder="Describe how this feature assists the applicant..."
+                          rows={2}
+                          {...register(
+                            `howMembershipHelps.${idx}.description`,
+                          )}
+                        />
                       </div>
                     </div>
                   ))}
