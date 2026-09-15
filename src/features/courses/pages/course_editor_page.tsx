@@ -47,6 +47,8 @@ interface CourseFormValues {
   discount: string | number;
   program: string;
   coverImage?: string | null;
+  banner?: string | null;
+  bannerText?: string;
   isPublished: boolean;
 
   outcomes: { description: string; order: number }[];
@@ -73,6 +75,8 @@ function getCourseFormDefaults(c?: Course | null): CourseFormValues {
     discount: c?.discount !== undefined ? String(c.discount) : "0",
     program: c?.program?.id ?? "",
     coverImage: c?.coverImage ?? null,
+    banner: c?.banner ?? null,
+    bannerText: c?.bannerText ?? "",
     isPublished: Boolean(c?.isPublished),
 
     outcomes: c?.courseOutcomes?.length
@@ -166,6 +170,7 @@ export default function CourseEditorPage({
   } = methods;
 
   const watchCoverImage = watch("coverImage");
+  const watchBanner = watch("banner");
   const watchIsPublished = watch("isPublished");
 
   // Field Arrays
@@ -303,6 +308,8 @@ export default function CourseEditorPage({
       discount: discountNum,
       program: values.program,
       coverImage: values.coverImage,
+      banner: values.banner || null,
+      bannerText: values.bannerText?.trim() || undefined,
       previewUrl: null,
       isPublished: values.isPublished,
       outcomes,
@@ -377,7 +384,18 @@ export default function CourseEditorPage({
   return (
     <DashboardLayout title={isEdit ? "Edit Course" : "Create Course"}>
       <FormProvider {...methods}>
-        <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6 pb-20">
+        <form
+          onSubmit={handleSubmit(onFormSubmit)}
+          onKeyDown={(e) => {
+            if (
+              e.key === "Enter" &&
+              (e.target as HTMLElement).tagName !== "TEXTAREA"
+            ) {
+              e.preventDefault();
+            }
+          }}
+          className="space-y-6 pb-20"
+        >
           {/* Header Bar */}
           <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-[#E7E9EB] shadow-xs">
             <div className="flex items-center gap-3">
@@ -621,29 +639,65 @@ export default function CourseEditorPage({
                 </div>
               </div>
 
-              {/* Cover Image Upload Card */}
-              <div className="bg-white rounded-xl border border-[#E7E9EB] p-6 shadow-sm space-y-4">
+              {/* Media & Promotional Banners */}
+              <div className="bg-white rounded-xl border border-[#E7E9EB] p-6 shadow-sm space-y-5">
                 <div>
-                  <FieldLabel required>Cover Image</FieldLabel>
+                  <h2 className="text-base font-bold text-base-content">
+                    Media & Promotional Banners
+                  </h2>
                   <p className="text-xs text-base-content/60">
-                    Upload a high-resolution banner for this course.
+                    Upload course cover thumbnail, wide promotional hero banner, and CTA headline text.
                   </p>
                 </div>
 
-                <ImageUpload
-                  value={watchCoverImage || null}
-                  onChange={(url) =>
-                    setValue("coverImage", url, {
-                      shouldDirty: true,
-                      shouldValidate: true,
-                    })
-                  }
-                  folder="chlps_courses"
-                  helperText="Recommended: 1200x630 or 16:9 ratio image. Max 5MB."
-                />
-                {errors.coverImage && (
-                  <FieldError>{errors.coverImage.message}</FieldError>
-                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Cover Thumbnail */}
+                  <div className="space-y-2">
+                    <FieldLabel required>Course Cover Image</FieldLabel>
+                    <ImageUpload
+                      value={watchCoverImage || null}
+                      onChange={(url) =>
+                        setValue("coverImage", url, {
+                          shouldDirty: true,
+                          shouldValidate: true,
+                        })
+                      }
+                      folder="chlps_courses"
+                      helperText="Recommended: 16:9 or 1200x630 card thumbnail. Max 5MB."
+                    />
+                    {errors.coverImage && (
+                      <FieldError>{errors.coverImage.message}</FieldError>
+                    )}
+                  </div>
+
+                  {/* Promotional Hero Banner */}
+                  <div className="space-y-2">
+                    <FieldLabel>Promotional Hero Banner</FieldLabel>
+                    <ImageUpload
+                      value={watchBanner || null}
+                      onChange={(url) =>
+                        setValue("banner", url, {
+                          shouldDirty: true,
+                          shouldValidate: true,
+                        })
+                      }
+                      folder="chlps_courses"
+                      helperText="Recommended: Wide 16:9 banner for promotional displays."
+                    />
+                  </div>
+                </div>
+
+                {/* Banner CTA Text */}
+                <div>
+                  <SimpleInput
+                    label="Banner Headline / CTA Text"
+                    placeholder="e.g. Start Your CLPA Certification Today"
+                    {...register("bannerText")}
+                  />
+                  <p className="text-xs text-base-content/50 mt-1">
+                    Promotional call-to-action text displayed with the hero banner.
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -901,7 +955,9 @@ export default function CourseEditorPage({
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     const prevTab = TABS[currentTabIndex - 1];
                     if (prevTab) setActiveTab(prevTab.key);
                   }}
@@ -914,10 +970,13 @@ export default function CourseEditorPage({
             <div className="flex items-center gap-2">
               {!isLastTab ? (
                 <Button
+                  key="btn-next-tab"
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     const nextTab = TABS[currentTabIndex + 1];
                     if (nextTab) setActiveTab(nextTab.key);
                   }}
@@ -927,6 +986,7 @@ export default function CourseEditorPage({
               ) : null}
 
               <Button
+                key="btn-submit-course"
                 type="submit"
                 size="sm"
                 variant="primary"

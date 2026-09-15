@@ -38,6 +38,8 @@ export interface Course {
   isPublished?: boolean;
   featured?: boolean;
   coverImage?: string;
+  banner?: string | null;
+  bannerText?: string;
   createdDate?: string;
   updatedDate?: string;
   program?: { id: string; title: string } | null;
@@ -94,6 +96,8 @@ export interface CreateCoursePayload {
   discount: number;
   program: string;
   coverImage: string;
+  banner?: string | null;
+  bannerText?: string;
   previewUrl?: string | null;
   isPublished?: boolean;
   outcomes: CourseOutcome[];

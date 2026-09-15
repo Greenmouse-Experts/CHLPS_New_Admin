@@ -414,6 +414,24 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
         >
           {course && (
             <div className="space-y-6">
+              {/* Promotional Hero Banner */}
+              {course.banner && (
+                <div className="relative rounded-2xl overflow-hidden border border-[#E7E9EB] shadow-xs max-h-56 bg-base-200">
+                  <img
+                    src={course.banner}
+                    alt=""
+                    className="w-full h-48 md:h-56 object-cover"
+                  />
+                  {course.bannerText && (
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex items-end p-5 sm:p-6">
+                      <p className="text-white text-base md:text-xl font-bold tracking-tight drop-shadow-md">
+                        {course.bannerText}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Hero Banner Card */}
               <div className="bg-white rounded-2xl border border-base-300 overflow-hidden shadow-xs">
                 <div className="grid grid-cols-1 lg:grid-cols-12">
