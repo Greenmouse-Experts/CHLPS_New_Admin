@@ -99,13 +99,36 @@ export const EventDetailModal = forwardRef<
     >
       <div className="space-y-6">
         {/* Header Image & Summary */}
-        {event.image && (
+        {(event.coverImage || event.image) && (
           <div className="w-full h-48 rounded-xl overflow-hidden border border-base-300">
             <img
-              src={event.image}
+              src={event.coverImage || event.image || ""}
               alt={event.name}
               className="w-full h-full object-cover"
             />
+          </div>
+        )}
+
+        {/* Gallery Images if available */}
+        {event.images && event.images.length > 0 && (
+          <div className="space-y-2">
+            <h5 className="text-xs font-semibold text-secondary uppercase">
+              Event Gallery ({event.images.length})
+            </h5>
+            <div className="flex items-center gap-2 overflow-x-auto pb-2">
+              {event.images.map((img, i) => (
+                <div
+                  key={i}
+                  className="w-20 h-20 rounded-lg overflow-hidden border border-base-300 shrink-0 bg-base-200"
+                >
+                  <img
+                    src={img}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -113,7 +136,9 @@ export const EventDetailModal = forwardRef<
           <div className="flex items-center gap-2 flex-wrap">
             <StatusBadge status={event.status} />
             <span className="badge badge-outline text-xs capitalize">
-              {labelOf(EVENT_CATEGORIES, event.category)}
+              {typeof event.category === "object" && event.category !== null && "name" in event.category
+                ? (event.category as { name: string }).name
+                : labelOf(EVENT_CATEGORIES, typeof event.category === "string" ? event.category : undefined)}
             </span>
             <span className="badge badge-outline text-xs capitalize">
               {labelOf(EVENT_FORMATS, event.format)}
@@ -197,8 +222,8 @@ export const EventDetailModal = forwardRef<
             </span>
             <p className="text-xs font-medium text-base-content flex items-center gap-1">
               <Profile2User size={13} />{" "}
-              {event.maxAttendees
-                ? `${event.maxAttendees} attendees`
+              {(event.maximumAttendees ?? event.maxAttendees)
+                ? `${event.maximumAttendees ?? event.maxAttendees} attendees`
                 : "Unlimited"}
             </p>
           </div>

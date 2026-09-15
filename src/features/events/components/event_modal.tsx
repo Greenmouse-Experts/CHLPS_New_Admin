@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { useForm, FormProvider, Controller } from "react-hook-form";
+import { useEffect, useState } from "react";
+import { useForm, FormProvider, Controller, useFieldArray } from "react-hook-form";
 import {
   Modal,
   Button,
@@ -28,6 +28,8 @@ import {
   EVENT_CURRENCIES,
   EVENT_STATUSES,
 } from "../domain/data/response/events_response";
+import { MembershipRepository } from "@/features/membership/domain/repository/membership_repository";
+import { Plus, Trash2 } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -40,8 +42,11 @@ interface Props {
 interface FormValues {
   name: string;
   description: string;
-  categoryId?: string;
+  categoryId: string;
   category?: string;
+  coverImage?: string | null;
+  image?: string | null;
+  galleryImages: { value: string }[];
   startDate: string;
   startTime: string;
   endDate: string;
@@ -52,15 +57,16 @@ interface FormValues {
   registrationRequired: boolean;
   registrationOpens?: string | null;
   registrationCloses?: string | null;
+  maximumAttendees?: number | string | null;
   maxAttendees?: number | string | null;
   eligibility: EventEligibility;
+  requiredMembershipIds: string[];
   price: number | string;
   currency: EventCurrency;
   organizerName: string;
   contactEmail: string;
   contactPhone?: string | null;
   status: EventStatus;
-  image?: string | null;
 }
 
 function normalizeFormat(val?: string | null): EventFormat {
@@ -72,8 +78,8 @@ function normalizeFormat(val?: string | null): EventFormat {
 
 function normalizeEligibility(val?: string | null): EventEligibility {
   const lower = (val || "").toLowerCase();
-  if (lower.includes("member")) return "Members Only";
   if (lower.includes("specific")) return "Specific Membership Type";
+  if (lower.includes("member")) return "Members Only";
   if (lower.includes("invitation")) return "Invitation Only";
   return "Everyone";
 }
@@ -86,44 +92,73 @@ function normalizeStatus(val?: string | null): EventStatus {
   return "Draft";
 }
 
+function toDateInputValue(val?: string | null): string {
+  if (!val) return "";
+  if (val.includes("T")) return val.split("T")[0];
+  return val;
+}
+
+function toIsoDate(val?: string | null): string | null {
+  if (!val) return null;
+  if (val.includes("T")) return val;
+  try {
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? val : d.toISOString();
+  } catch {
+    return val;
+  }
+}
+
 function getFormDefaults(item?: EventItem | null): FormValues {
   const catId =
     item?.categoryId ||
     (typeof item?.category === "object" && item.category !== null
-      ? (item.category as any).id
+      ? (item.category as { id?: string }).id || ""
       : typeof item?.category === "string"
         ? item.category
         : "");
+
+  const galleryImages = (item?.images || []).map((img) => ({ value: img }));
+  const initialCover = item?.coverImage || item?.image || null;
 
   return {
     name: item?.name ?? "",
     description: item?.description ?? "",
     categoryId: catId,
     category: typeof item?.category === "string" ? item.category : "",
-    startDate: item?.startDate ?? "",
+    coverImage: initialCover,
+    image: initialCover,
+    galleryImages,
+    startDate: toDateInputValue(item?.startDate),
     startTime: item?.startTime ?? "",
-    endDate: item?.endDate ?? "",
+    endDate: toDateInputValue(item?.endDate),
     endTime: item?.endTime ?? "",
     format: normalizeFormat(item?.format),
     meetingLink: item?.meetingLink ?? "",
     location: item?.location ?? "",
     registrationRequired: item?.registrationRequired ?? true,
-    registrationOpens: item?.registrationOpens ?? null,
-    registrationCloses: item?.registrationCloses ?? null,
+    registrationOpens: toDateInputValue(item?.registrationOpens),
+    registrationCloses: toDateInputValue(item?.registrationCloses),
+    maximumAttendees:
+      item?.maximumAttendees != null
+        ? item.maximumAttendees
+        : item?.maxAttendees != null
+          ? item.maxAttendees
+          : "",
     maxAttendees:
-      item?.maxAttendees != null
-        ? item.maxAttendees
-        : item?.maximumAttendees != null
-          ? item.maximumAttendees
+      item?.maximumAttendees != null
+        ? item.maximumAttendees
+        : item?.maxAttendees != null
+          ? item.maxAttendees
           : "",
     eligibility: normalizeEligibility(item?.eligibility),
+    requiredMembershipIds: item?.requiredMembershipIds ?? [],
     price: item?.price != null ? item.price : 0,
     currency: item?.currency ?? "CAD",
     organizerName: item?.organizerName ?? "",
     contactEmail: item?.contactEmail ?? "",
     contactPhone: item?.contactPhone ?? "",
     status: normalizeStatus(item?.status),
-    image: item?.image ?? null,
   };
 }
 
@@ -144,6 +179,9 @@ export function EventModal({
   onSubmit,
 }: Props) {
   const isEdit = !!event;
+  const [membershipOptions, setMembershipOptions] = useState<
+    { id: string; name: string }[]
+  >([]);
 
   const methods = useForm<FormValues>({
     defaultValues: getFormDefaults(event),
@@ -167,7 +205,18 @@ export function EventModal({
   const watchStartDate = watch("startDate");
   const watchRegistrationOpens = watch("registrationOpens");
   const watchRegistrationCloses = watch("registrationCloses");
-  const watchImage = watch("image");
+  const watchCoverImage = watch("coverImage");
+  const watchEligibility = watch("eligibility");
+  const watchRequiredMembershipIds = watch("requiredMembershipIds") || [];
+
+  const {
+    fields: galleryFields,
+    append: appendGallery,
+    remove: removeGallery,
+  } = useFieldArray({
+    control,
+    name: "galleryImages",
+  });
 
   const fmtLower = (currentFormat || "").toLowerCase();
   const needsLink = fmtLower === "virtual" || fmtLower === "hybrid";
@@ -176,6 +225,16 @@ export function EventModal({
   useEffect(() => {
     if (open) {
       reset(getFormDefaults(event));
+      // Load available membership plans for eligibility mapping
+      new MembershipRepository().list().then((res) => {
+        if (res.success && res.data) {
+          setMembershipOptions(
+            res.data.items
+              .filter((m) => Boolean(m.id))
+              .map((m) => ({ id: m.id as string, name: m.name })),
+          );
+        }
+      });
     }
   }, [open, event, reset]);
 
@@ -187,6 +246,23 @@ export function EventModal({
       setError("endDate", {
         type: "manual",
         message: "End date and time must be after the start date and time",
+      });
+      return;
+    }
+
+    if (!data.categoryId) {
+      setError("categoryId", {
+        type: "manual",
+        message: "Event category is required",
+      });
+      return;
+    }
+
+    const cover = data.coverImage || data.image;
+    if (!cover) {
+      setError("coverImage", {
+        type: "manual",
+        message: "Cover image is required",
       });
       return;
     }
@@ -251,39 +327,51 @@ export function EventModal({
     }
 
     const attendeesNum =
-      data.maxAttendees !== "" && data.maxAttendees != null
-        ? Number(data.maxAttendees)
-        : null;
+      data.maximumAttendees !== "" && data.maximumAttendees != null
+        ? Number(data.maximumAttendees)
+        : data.maxAttendees !== "" && data.maxAttendees != null
+          ? Number(data.maxAttendees)
+          : null;
+
+    const galleryImages = (data.galleryImages || [])
+      .map((item) => item.value.trim())
+      .filter(Boolean);
 
     const payload: EventPayload = {
       name: data.name.trim(),
       description: data.description.trim(),
-      category: data.categoryId || data.category || "conference",
-      categoryId: data.categoryId || undefined,
+      categoryId: data.categoryId,
+      category: data.categoryId,
+      coverImage: cover,
+      image: cover,
+      images: galleryImages,
       startDate: data.startDate,
       startTime: data.startTime,
       endDate: data.endDate,
       endTime: data.endTime,
       format: data.format,
-      meetingLink: needsLink ? data.meetingLink?.trim() || null : null,
-      location: needsLocation ? data.location?.trim() || null : null,
+      meetingLink: data.meetingLink?.trim() || null,
+      location: data.location?.trim() || null,
       registrationRequired: Boolean(data.registrationRequired),
       registrationOpens: data.registrationRequired
-        ? data.registrationOpens || null
+        ? toIsoDate(data.registrationOpens)
         : null,
       registrationCloses: data.registrationRequired
-        ? data.registrationCloses || null
+        ? toIsoDate(data.registrationCloses)
         : null,
-      maxAttendees: attendeesNum,
       maximumAttendees: attendeesNum,
+      maxAttendees: attendeesNum,
       eligibility: data.eligibility,
+      requiredMembershipIds:
+        data.eligibility === "Specific Membership Type"
+          ? data.requiredMembershipIds || []
+          : [],
       price: priceNum,
       currency: data.currency,
       organizerName: data.organizerName.trim(),
       contactEmail: data.contactEmail.trim(),
       contactPhone: data.contactPhone?.trim() || null,
       status: data.status,
-      image: data.image || null,
     };
 
     const ok = await onSubmit(payload);
@@ -299,7 +387,7 @@ export function EventModal({
       scrollable
     >
       <FormProvider {...methods}>
-        <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-5">
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
               <SimpleInput
@@ -332,7 +420,10 @@ export function EventModal({
                 placeholder="Select category"
                 autoSelectFirst={true}
                 onChange={(val) => {
-                  if (val) clearErrors("categoryId");
+                  if (val) {
+                    setValue("categoryId", val, { shouldDirty: true });
+                    clearErrors("categoryId");
+                  }
                 }}
                 render={(item) => (
                   <option key={item.id} value={item.id}>
@@ -340,6 +431,9 @@ export function EventModal({
                   </option>
                 )}
               />
+              {errors.categoryId && (
+                <FieldError>{String(errors.categoryId.message)}</FieldError>
+              )}
             </div>
 
             <div>
@@ -352,17 +446,74 @@ export function EventModal({
               </LocalSelect>
             </div>
 
-            {/* Cloudinary Image Upload */}
+            {/* Cloudinary Cover Image */}
             <div className="sm:col-span-2">
               <ImageUpload
-                label="Event Image / Banner"
-                value={watchImage || null}
-                onChange={(img) =>
-                  setValue("image", img, { shouldDirty: true })
-                }
+                label="Event Cover Image / Poster"
+                value={watchCoverImage || null}
+                onChange={(img) => {
+                  setValue("coverImage", img, { shouldDirty: true, shouldValidate: true });
+                  setValue("image", img, { shouldDirty: true });
+                  if (img) clearErrors("coverImage");
+                }}
                 folder="chlps_events"
-                helperText="Upload event promotional banner or poster to Cloudinary."
+                helperText="Upload event cover banner or promotional poster to Cloudinary."
               />
+              {errors.coverImage && (
+                <FieldError>{String(errors.coverImage.message)}</FieldError>
+              )}
+            </div>
+
+            {/* Additional Gallery Images */}
+            <div className="sm:col-span-2 space-y-3 bg-base-200/30 p-4 rounded-xl border border-base-300">
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="block text-xs font-semibold text-base-content/80">
+                    Event Gallery Images
+                  </label>
+                  <p className="text-xs text-secondary">
+                    Optional photos, venue shots, or speaker highlights for this event.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => appendGallery({ value: "" })}
+                  leftIcon={<Plus size={14} />}
+                >
+                  Add Image
+                </Button>
+              </div>
+
+              {galleryFields.map((field, idx) => (
+                <div
+                  key={field.id}
+                  className="flex items-start gap-3 p-3 bg-white rounded-lg border border-base-300"
+                >
+                  <div className="flex-1">
+                    <ImageUpload
+                      value={watch(`galleryImages.${idx}.value`)}
+                      onChange={(url) =>
+                        setValue(`galleryImages.${idx}.value`, url || "", {
+                          shouldDirty: true,
+                        })
+                      }
+                      folder="chlps_events"
+                      helperText={`Gallery image #${idx + 1}`}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-error hover:bg-error/10 mt-1"
+                    onClick={() => removeGallery(idx)}
+                  >
+                    <Trash2 size={16} />
+                  </Button>
+                </div>
+              ))}
             </div>
 
             <div>
@@ -449,13 +600,67 @@ export function EventModal({
               </LocalSelect>
             </div>
 
+            {/* Specific Membership Selection */}
+            {watchEligibility === "Specific Membership Type" && (
+              <div className="sm:col-span-2 space-y-2 p-3.5 bg-base-200/40 rounded-xl border border-base-300">
+                <label className="block text-xs font-semibold text-base-content/80">
+                  Allowed Membership Plans
+                </label>
+                <p className="text-xs text-secondary">
+                  Check which membership tiers have access to register for this event.
+                </p>
+                {membershipOptions.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                    {membershipOptions.map((m) => {
+                      const isChecked = watchRequiredMembershipIds.includes(m.id);
+                      return (
+                        <label
+                          key={m.id}
+                          className="flex items-center gap-2.5 p-2.5 rounded-lg border border-base-300 bg-white hover:bg-base-50 cursor-pointer transition-colors"
+                        >
+                          <input
+                            type="checkbox"
+                            className="checkbox checkbox-sm checkbox-primary"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setValue("requiredMembershipIds", [
+                                  ...watchRequiredMembershipIds,
+                                  m.id,
+                                ], { shouldDirty: true });
+                              } else {
+                                setValue(
+                                  "requiredMembershipIds",
+                                  watchRequiredMembershipIds.filter(
+                                    (id) => id !== m.id,
+                                  ),
+                                  { shouldDirty: true },
+                                );
+                              }
+                            }}
+                          />
+                          <span className="text-xs font-medium text-base-content">
+                            {m.name}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-xs text-secondary italic py-2">
+                    Loading available membership tiers...
+                  </p>
+                )}
+              </div>
+            )}
+
             {needsLink && (
               <div className="sm:col-span-2">
                 <SimpleInput
                   label="Meeting link"
                   type="url"
                   required
-                  placeholder="https://meet.example.com/..."
+                  placeholder="https://meet.example.com/abc"
                   {...register("meetingLink")}
                 />
               </div>
@@ -466,7 +671,7 @@ export function EventModal({
                 <SimpleInput
                   label="Location"
                   required
-                  placeholder="Venue / address"
+                  placeholder="123 Main St, Windsor"
                   {...register("location")}
                 />
               </div>
@@ -494,8 +699,8 @@ export function EventModal({
                 label="Maximum attendees"
                 type="number"
                 min={0}
-                placeholder="Optional"
-                {...register("maxAttendees")}
+                placeholder="100"
+                {...register("maximumAttendees")}
               />
             </div>
 
@@ -551,7 +756,7 @@ export function EventModal({
                 type="number"
                 min={0}
                 required
-                placeholder="Enter 0 for a free event"
+                placeholder="0"
                 {...register("price", {
                   required: "Event price is required",
                 })}

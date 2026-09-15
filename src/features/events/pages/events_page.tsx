@@ -68,9 +68,9 @@ export default function EventsPage() {
         label: "Event",
         render: (_, row) => (
           <div className="flex items-start gap-3 min-w-[240px] max-w-[320px]">
-            {row.image ? (
+            {row.coverImage || row.image ? (
               <img
-                src={row.image}
+                src={row.coverImage || row.image || ""}
                 alt=""
                 className="w-10 h-10 rounded-lg object-cover border border-base-300 shrink-0"
               />

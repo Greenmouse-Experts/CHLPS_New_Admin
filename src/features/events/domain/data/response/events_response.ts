@@ -26,9 +26,11 @@ export interface EventItem {
   id: string;
   name: string;
   description: string;
-  category: EventCategory | string;
+  category?: EventCategory | string;
   categoryId?: string;
-  image: string | null;
+  coverImage?: string | null;
+  image?: string | null;
+  images?: string[];
   startDate: string;
   startTime: string;
   endDate: string;
@@ -39,19 +41,20 @@ export interface EventItem {
   registrationRequired: boolean;
   registrationOpens: string | null;
   registrationCloses: string | null;
-  maxAttendees: number | null;
   maximumAttendees?: number | null;
+  maxAttendees?: number | null;
   eligibility: EventEligibility;
+  requiredMembershipIds?: string[];
   price: number;
   currency: EventCurrency;
   organizerName: string;
   contactEmail: string;
   contactPhone: string | null;
   status: EventStatus;
-  attendeesCount: number;
-  attendeesThisMonth: number;
-  amountPaid: number;
-  createdDate: string;
+  attendeesCount?: number;
+  attendeesThisMonth?: number;
+  amountPaid?: number;
+  createdDate?: string;
 }
 
 export interface EventStats {
@@ -66,7 +69,13 @@ export interface EventStats {
 export type EventPayload = Omit<
   EventItem,
   "id" | "attendeesCount" | "attendeesThisMonth" | "amountPaid" | "createdDate"
->;
+> & {
+  categoryId: string;
+  coverImage: string;
+  images?: string[];
+  maximumAttendees?: number | null;
+  requiredMembershipIds?: string[];
+};
 
 export type EventsApiResponse = ApiResponse<{
   items: EventItem[];
@@ -116,7 +125,8 @@ export const EVENT_STATUSES: { value: EventStatus; label: string }[] = [
 
 export function labelOf<T extends { value: string; label: string }>(
   list: T[],
-  value: string,
+  value?: string | null,
 ): string {
+  if (!value) return "";
   return list.find((item) => item.value === value)?.label ?? value;
 }
