@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Tag } from "lucide-react";
 import { DashboardLayout, StatCard } from "@/components";
 import { Button, ConfirmModal, Divider, StatusBadge } from "@/components/ui";
 import CustomTable, { columnType } from "@/components/tables/CustomTable";
@@ -31,6 +33,7 @@ type DetailModalHandle = ModalHandle & {
 };
 
 export default function EventsPage() {
+  const router = useRouter();
   const {
     events,
     total,
@@ -226,15 +229,24 @@ export default function EventsPage() {
                 className="flex-1 text-sm outline-none focus:outline-none focus-visible:outline-none ring-0 bg-transparent placeholder-secondary/50"
               />
             </div>
-            <Button
-              leftIcon={<AddCircle size={14} color="currentColor" />}
-              onClick={() => {
-                setEditing(null);
-                setModalOpen(true);
-              }}
-            >
-              Create event
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                leftIcon={<Tag size={14} />}
+                onClick={() => router.push("/event-categories")}
+              >
+                Categories
+              </Button>
+              <Button
+                leftIcon={<AddCircle size={14} color="currentColor" />}
+                onClick={() => {
+                  setEditing(null);
+                  setModalOpen(true);
+                }}
+              >
+                Create event
+              </Button>
+            </div>
           </div>
           <Divider />
           <PageLoader

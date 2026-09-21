@@ -8,6 +8,7 @@ import {
   Button,
   ConfirmModal,
   Divider,
+  ImageUpload,
   Modal,
   Select,
   StatusBadge,
@@ -155,6 +156,7 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
   const [assessmentTitle, setAssessmentTitle] = useState("");
   const [assessmentDescription, setAssessmentDescription] = useState("");
   const [assessmentDuration, setAssessmentDuration] = useState("15");
+  const [assessmentMedia, setAssessmentMedia] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -315,6 +317,10 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
       toast("Please provide an assessment title", "warning");
       return;
     }
+    if (!assessmentMedia || !assessmentMedia.trim()) {
+      toast("Please upload an image for the assessment", "warning");
+      return;
+    }
     const durationNum = Number(assessmentDuration);
     if (isNaN(durationNum) || durationNum < 0) {
       toast("Please enter a valid duration in minutes", "warning");
@@ -328,7 +334,7 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
       course: courseId,
       courseContent: contentId,
       duration: durationNum || 0,
-      media: null,
+      media: assessmentMedia.trim(),
       previewUrl: null,
       mediaType: "assessment",
     });
@@ -339,6 +345,7 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
       setAssessmentTitle("");
       setAssessmentDescription("");
       setAssessmentDuration("15");
+      setAssessmentMedia(null);
 
       const updatedList = await repo.listSubContent(contentId);
       if (updatedList.success && updatedList.data) {
@@ -1178,16 +1185,16 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
                                                   • Interactive Quiz
                                                 </span>
                                               )}
-                                              {!isAssessment && hasMedia && (
+                                              {hasMedia && (
                                                 <span className="text-emerald-700 text-[11px] font-medium flex items-center gap-1">
                                                   •{" "}
                                                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />{" "}
-                                                  Media attached
+                                                  {isAssessment ? "Image attached" : "Media attached"}
                                                 </span>
                                               )}
-                                              {!isAssessment && !hasMedia && (
+                                              {!hasMedia && (
                                                 <span className="text-base-content/40 text-[11px] flex items-center gap-1 italic">
-                                                  • No media uploaded
+                                                  • {isAssessment ? "No image uploaded" : "No media uploaded"}
                                                 </span>
                                               )}
                                             </div>
@@ -1212,16 +1219,20 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
                                             </Button>
                                           )}
 
-                                          {!isAssessment && hasMedia && (
+                                          {hasMedia && (
                                             <a
                                               href={lesson.media}
                                               target="_blank"
                                               rel="noreferrer"
                                               className="btn btn-xs btn-outline border-base-300 hover:border-primary hover:bg-primary/5 hover:text-primary gap-1.5 font-medium cursor-pointer"
-                                              title="Preview media resource in a new tab"
+                                              title={
+                                                isAssessment
+                                                  ? "Preview assessment image in a new tab"
+                                                  : "Preview media resource in a new tab"
+                                              }
                                             >
                                               <Eye size={13} />
-                                              Preview Media
+                                              {isAssessment ? "View Image" : "Preview Media"}
                                               <ExternalLink
                                                 size={12}
                                                 className="opacity-60"
@@ -1229,10 +1240,14 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
                                             </a>
                                           )}
 
-                                          {!isAssessment && !hasMedia && (
+                                          {!hasMedia && (
                                             <span
                                               className="px-2.5 py-1 text-[11px] rounded-lg bg-base-200/70 text-secondary border border-dashed border-base-300 flex items-center gap-1.5 cursor-not-allowed select-none"
-                                              title="This lesson does not have a media file uploaded"
+                                              title={
+                                                isAssessment
+                                                  ? "This assessment does not have an image uploaded"
+                                                  : "This lesson does not have a media file uploaded"
+                                              }
                                             >
                                               <EyeOff
                                                 size={12}
@@ -1284,10 +1299,13 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
                                   variant="outline"
                                   leftIcon={<MessageQuestion size={14} />}
                                   onClick={() => {
-                                    setAssessmentForm({ contentId: section.id });
+                                    setAssessmentForm({
+                                      contentId: section.id,
+                                    });
                                     setAssessmentTitle("");
                                     setAssessmentDescription("");
                                     setAssessmentDuration("15");
+                                    setAssessmentMedia(null);
                                   }}
                                 >
                                   Add Assessment
@@ -1554,6 +1572,19 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
             onChange={(e) => setAssessmentTitle(e.target.value)}
             placeholder="e.g. Module 1 Knowledge Check"
           />
+
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-base-content/80">
+              Assessment Image <span className="text-error">*</span>
+            </label>
+            <ImageUpload
+              value={assessmentMedia}
+              onChange={(url) => setAssessmentMedia(url)}
+              folder="chlps_assessments"
+              helperText="Upload an image/banner for this assessment (PNG, JPG, WEBP). Max 5MB."
+            />
+          </div>
+
           <TextField
             label="Description / Instructions (Optional)"
             value={assessmentDescription}

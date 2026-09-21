@@ -84,6 +84,10 @@ const NAV_ITEMS: NavItem[] = [
     href: "/events",
     icon: <Calendar size={16} color="currentColor" />,
     roles: ["admin"],
+    children: [
+      { label: "All Events", href: "/events", roles: ["admin"] },
+      { label: "Categories", href: "/event-categories", roles: ["admin"] },
+    ],
   },
   {
     label: "Courses",

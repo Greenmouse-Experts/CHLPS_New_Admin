@@ -130,3 +130,29 @@ export function labelOf<T extends { value: string; label: string }>(
   if (!value) return "";
   return list.find((item) => item.value === value)?.label ?? value;
 }
+
+
+export interface EventCategoryItem {
+  id: string;
+  name: string;
+  slug?: string;
+  isPublished?: boolean;
+  eventsCount?: number;
+  createdDate?: string;
+  updatedDate?: string;
+}
+
+export type EventCategoriesApiResponse = ApiResponse<{
+  items: EventCategoryItem[];
+  count: number;
+}>;
+
+export interface CreateEventCategoryPayload {
+  name: string;
+  isPublished?: boolean;
+}
+
+export interface UpdateEventCategoryPayload {
+  name?: string;
+  isPublished?: boolean;
+}

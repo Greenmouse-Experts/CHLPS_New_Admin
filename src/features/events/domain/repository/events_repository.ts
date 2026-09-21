@@ -8,13 +8,17 @@ import {
   unwrapMessage,
 } from "@/lib/tokens";
 import {
+  CreateEventCategoryPayload,
   EventApiResponse,
+  EventCategoriesApiResponse,
+  EventCategoryItem,
   EventItem,
   EventPayload,
   EventsApiResponse,
   EventStats,
   EventStatsApiResponse,
   EventStatus,
+  UpdateEventCategoryPayload,
 } from "../data/response/events_response";
 
 export class EventsRepository {
@@ -79,9 +83,50 @@ export class EventsRepository {
     };
   }
 
-  public async listCategories() {
+  public async listCategories(): Promise<EventCategoriesApiResponse> {
     const res = await this._api.getData<unknown>(ApiUrls.eventCategories);
-    return res;
+    if (res.success) {
+      return ok({
+        items: unwrapList<EventCategoryItem>(res.data),
+        count: unwrapCount(res.data, unwrapList(res.data).length),
+      });
+    }
+    return fail(res.message || "Failed to fetch event categories");
+  }
+
+  public async createCategory(payload: CreateEventCategoryPayload) {
+    const res = await this._api.postData<
+      CreateEventCategoryPayload,
+      { message?: string }
+    >(ApiUrls.createEventCategory, payload);
+    return {
+      success: res.success,
+      message: unwrapMessage(res.data, res.message || "Category created"),
+    };
+  }
+
+  public async updateCategory(
+    id: string,
+    payload: UpdateEventCategoryPayload,
+  ) {
+    const res = await this._api.patchData<
+      UpdateEventCategoryPayload,
+      { message?: string }
+    >(ApiUrls.eventCategoryById(id), payload);
+    return {
+      success: res.success,
+      message: unwrapMessage(res.data, res.message || "Category updated"),
+    };
+  }
+
+  public async deleteCategory(id: string) {
+    const res = await this._api.deleteData<{ message?: string }>(
+      ApiUrls.eventCategoryById(id),
+    );
+    return {
+      success: res.success,
+      message: unwrapMessage(res.data, res.message || "Category deleted"),
+    };
   }
 
   public async updateStatus(id: string, status: EventStatus | string) {
