@@ -148,6 +148,14 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // Add assessment modal state
+  const [assessmentForm, setAssessmentForm] = useState<{
+    contentId: string;
+  } | null>(null);
+  const [assessmentTitle, setAssessmentTitle] = useState("");
+  const [assessmentDescription, setAssessmentDescription] = useState("");
+  const [assessmentDuration, setAssessmentDuration] = useState("15");
+
   const load = useCallback(async () => {
     setLoading(true);
     setIsError(false);
@@ -298,6 +306,49 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
     } finally {
       setBusy(false);
       setDeleteContentId(null);
+    }
+  };
+
+  const handleCreateAssessment = async () => {
+    if (!assessmentForm) return;
+    if (!assessmentTitle.trim()) {
+      toast("Please provide an assessment title", "warning");
+      return;
+    }
+    const durationNum = Number(assessmentDuration);
+    if (isNaN(durationNum) || durationNum < 0) {
+      toast("Please enter a valid duration in minutes", "warning");
+      return;
+    }
+    setBusy(true);
+    const contentId = assessmentForm.contentId;
+    const res = await repo.createSubContent({
+      title: assessmentTitle.trim(),
+      description: assessmentDescription.trim() || undefined,
+      course: courseId,
+      courseContent: contentId,
+      duration: durationNum || 0,
+      media: null,
+      previewUrl: null,
+      mediaType: "assessment",
+    });
+    setBusy(false);
+    if (res.success) {
+      toast(res.message || "Assessment created successfully", "success");
+      setAssessmentForm(null);
+      setAssessmentTitle("");
+      setAssessmentDescription("");
+      setAssessmentDuration("15");
+
+      const updatedList = await repo.listSubContent(contentId);
+      if (updatedList.success && updatedList.data) {
+        setSubs((s) => ({
+          ...s,
+          [contentId]: updatedList.data!,
+        }));
+      }
+    } else {
+      toast(res.message || "Failed to add assessment", "danger");
     }
   };
 
@@ -1231,40 +1282,12 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
                                 <Button
                                   size="xs"
                                   variant="outline"
-                                  loading={busy}
                                   leftIcon={<MessageQuestion size={14} />}
-                                  onClick={async () => {
-                                    setBusy(true);
-                                    const res = await repo.createSubContent({
-                                      title: "Assessment",
-                                      course: courseId,
-                                      courseContent: section.id,
-                                      duration: 0,
-                                      media: null,
-                                      previewUrl: null,
-                                      mediaType: "assessment",
-                                    });
-                                    if (res.success) {
-                                      toast("Assessment created", "success");
-                                      const updatedList =
-                                        await repo.listSubContent(section.id);
-                                      if (
-                                        updatedList.success &&
-                                        updatedList.data
-                                      ) {
-                                        setSubs((s) => ({
-                                          ...s,
-                                          [section.id]: updatedList.data!,
-                                        }));
-                                      }
-                                    } else {
-                                      toast(
-                                        res.message ||
-                                          "Failed to add assessment",
-                                        "danger",
-                                      );
-                                    }
-                                    setBusy(false);
+                                  onClick={() => {
+                                    setAssessmentForm({ contentId: section.id });
+                                    setAssessmentTitle("");
+                                    setAssessmentDescription("");
+                                    setAssessmentDuration("15");
                                   }}
                                 >
                                   Add Assessment
@@ -1513,6 +1536,54 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
           >
             Upload and Save Lesson
           </Button>
+        </div>
+      </Modal>
+
+      {/* Add Assessment Modal */}
+      <Modal
+        open={!!assessmentForm}
+        onClose={() => setAssessmentForm(null)}
+        title="Create Assessment"
+        size="md"
+      >
+        <div className="space-y-4">
+          <TextField
+            label="Assessment Title"
+            required
+            value={assessmentTitle}
+            onChange={(e) => setAssessmentTitle(e.target.value)}
+            placeholder="e.g. Module 1 Knowledge Check"
+          />
+          <TextField
+            label="Description / Instructions (Optional)"
+            value={assessmentDescription}
+            onChange={(e) => setAssessmentDescription(e.target.value)}
+            placeholder="e.g. Complete this quiz to test your understanding."
+          />
+          <TextField
+            label="Estimated Duration (minutes)"
+            type="number"
+            min={0}
+            value={assessmentDuration}
+            onChange={(e) => setAssessmentDuration(e.target.value)}
+            placeholder="15"
+          />
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setAssessmentForm(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              loading={busy}
+              onClick={handleCreateAssessment}
+            >
+              Create Assessment
+            </Button>
+          </div>
         </div>
       </Modal>
 
