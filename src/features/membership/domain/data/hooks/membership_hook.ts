@@ -7,6 +7,7 @@ import {
   MembershipSubscriber,
   MembershipTransaction,
   MembershipStats,
+  MembershipApplicationItem,
 } from "../response/membership_response";
 import MembershipRepository from "../../repository/membership_repository";
 
@@ -213,12 +214,26 @@ export function useMembershipDetail(id: string) {
     setIsError(false);
     setError(null);
     try {
-      const res = await repo.getOne(id);
+      const [res, subsRes, trxRes] = await Promise.all([
+        repo.getOne(id),
+        repo.listSubscribers(id),
+        repo.listTransactions(id),
+      ]);
       if (res.success && res.data) {
         setMembership(res.data);
       } else {
         setIsError(true);
         setError(res.message || "Membership not found");
+      }
+      if (subsRes.success && subsRes.data) {
+        setSubscribers(subsRes.data.items);
+      } else {
+        setSubscribers([]);
+      }
+      if (trxRes.success && trxRes.data) {
+        setTransactions(trxRes.data.items);
+      } else {
+        setTransactions([]);
       }
     } catch (err) {
       setIsError(true);
@@ -299,6 +314,102 @@ export function useMembershipDetail(id: string) {
     }
   }, [id, repo, toast]);
 
+  const approveApplication = useCallback(
+    async (applicationId: string) => {
+      setIsSaving(true);
+      try {
+        const res = await repo.approveApplication(applicationId);
+        if (res.success) {
+          toast(
+            res.message ||
+              "Application approved. Membership activated and certificate issued.",
+            "success",
+          );
+          await loadData();
+          return true;
+        } else {
+          toast(res.message, "danger");
+          return false;
+        }
+      } catch (err) {
+        toast("Failed to approve membership application", "danger");
+        return false;
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [loadData, repo, toast],
+  );
+
+  const rejectApplication = useCallback(
+    async (applicationId: string, reason: string) => {
+      setIsSaving(true);
+      try {
+        const res = await repo.rejectApplication(applicationId, reason);
+        if (res.success) {
+          toast(res.message || "Membership application denied.", "success");
+          await loadData();
+          return true;
+        } else {
+          toast(res.message, "danger");
+          return false;
+        }
+      } catch (err) {
+        toast("Failed to deny membership application", "danger");
+        return false;
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [loadData, repo, toast],
+  );
+
+  const cancelStudentMembership = useCallback(
+    async (studentMembershipId: string) => {
+      setIsSaving(true);
+      try {
+        const res = await repo.cancelStudentMembership(studentMembershipId);
+        if (res.success) {
+          toast(res.message || "Student membership cancelled.", "success");
+          await loadData();
+          return true;
+        } else {
+          toast(res.message, "danger");
+          return false;
+        }
+      } catch (err) {
+        toast("Failed to cancel student membership", "danger");
+        return false;
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [loadData, repo, toast],
+  );
+
+  const cancelOrder = useCallback(
+    async (orderNumber: string) => {
+      setIsSaving(true);
+      try {
+        const res = await repo.cancelOrder(orderNumber);
+        if (res.success) {
+          toast(res.message || "Order cancelled successfully.", "success");
+          await loadData();
+          return true;
+        } else {
+          toast(res.message, "danger");
+          return false;
+        }
+      } catch (err) {
+        toast("Failed to cancel order", "danger");
+        return false;
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [loadData, repo, toast],
+  );
+
   return {
     membership,
     subscribers,
@@ -310,6 +421,169 @@ export function useMembershipDetail(id: string) {
     updateMembership,
     togglePublish,
     removeMembership,
+    approveApplication,
+    rejectApplication,
+    cancelStudentMembership,
+    cancelOrder,
     refetch: loadData,
+  };
+}
+
+export function useMembershipApplications() {
+  const { toast } = useToast();
+  const repo = useMemo(() => new MembershipRepository(), []);
+  const [applications, setApplications] = useState<MembershipApplicationItem[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
+  const [status, setStatus] = useState<string>("all");
+  const [search, setSearch] = useState("");
+  const [selectedMembershipId, setSelectedMembershipId] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
+  const [error, setError] = useState<unknown>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const loadData = useCallback(
+    async (p = page, currentStatus = status, memId = selectedMembershipId) => {
+      setIsLoading(true);
+      setIsError(false);
+      setError(null);
+      try {
+        const res = await repo.listApplications({
+          page: p,
+          pageSize,
+          status: currentStatus !== "all" ? currentStatus : undefined,
+          membershipId: memId || undefined,
+        });
+
+        if (res.success && res.data) {
+          setApplications(res.data.items);
+          setTotal(res.data.count);
+          setPage(p);
+        } else {
+          setIsError(true);
+          setError(res.message || "Failed to fetch applications");
+        }
+      } catch (err) {
+        setIsError(true);
+        setError(err);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [page, pageSize, repo, selectedMembershipId, status],
+  );
+
+  useEffect(() => {
+    loadData(1, status, selectedMembershipId);
+  }, [loadData, status, selectedMembershipId]);
+
+  const handleStatusChange = useCallback((newStatus: string) => {
+    setStatus(newStatus);
+    setPage(1);
+  }, []);
+
+  const handleMembershipChange = useCallback((memId: string) => {
+    setSelectedMembershipId(memId);
+    setPage(1);
+  }, []);
+
+  const handlePageChange = useCallback(
+    (p: number) => {
+      loadData(p, status, selectedMembershipId);
+    },
+    [loadData, selectedMembershipId, status],
+  );
+
+  const approveApplication = useCallback(
+    async (applicationId: string) => {
+      setIsSaving(true);
+      try {
+        const res = await repo.approveApplication(applicationId);
+        if (res.success) {
+          toast(
+            res.message ||
+              "Application approved. Membership activated and certificate issued.",
+            "success",
+          );
+          await loadData(page, status, selectedMembershipId);
+          return true;
+        } else {
+          toast(res.message, "danger");
+          return false;
+        }
+      } catch (err) {
+        toast("Failed to approve membership application", "danger");
+        return false;
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [loadData, page, repo, selectedMembershipId, status, toast],
+  );
+
+  const rejectApplication = useCallback(
+    async (applicationId: string, reason: string) => {
+      setIsSaving(true);
+      try {
+        const res = await repo.rejectApplication(applicationId, reason);
+        if (res.success) {
+          toast(res.message || "Membership application denied.", "success");
+          await loadData(page, status, selectedMembershipId);
+          return true;
+        } else {
+          toast(res.message, "danger");
+          return false;
+        }
+      } catch (err) {
+        toast("Failed to deny membership application", "danger");
+        return false;
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [loadData, page, repo, selectedMembershipId, status, toast],
+  );
+
+  const filteredApplications = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return applications;
+    return applications.filter((app) => {
+      const studentName = `${app.student?.firstName ?? ""} ${app.student?.lastName ?? ""}`.toLowerCase();
+      const email = (app.student?.email ?? "").toLowerCase();
+      const phone = (app.student?.phone ?? "").toLowerCase();
+      const planName = (app.membership?.name ?? "").toLowerCase();
+      const orderRef = (app.order?.reference ?? app.orderId ?? "").toLowerCase();
+      return (
+        studentName.includes(q) ||
+        email.includes(q) ||
+        phone.includes(q) ||
+        planName.includes(q) ||
+        orderRef.includes(q)
+      );
+    });
+  }, [applications, search]);
+
+  return {
+    applications: filteredApplications,
+    rawApplications: applications,
+    total,
+    page,
+    pageSize,
+    status,
+    search,
+    selectedMembershipId,
+    isLoading,
+    isError,
+    error,
+    isSaving,
+    setSearch,
+    handleStatusChange,
+    handleMembershipChange,
+    handlePageChange,
+    approveApplication,
+    rejectApplication,
+    refetch: () => loadData(page, status, selectedMembershipId),
   };
 }

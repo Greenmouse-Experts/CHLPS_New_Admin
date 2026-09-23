@@ -77,6 +77,11 @@ const NAV_ITEMS: NavItem[] = [
         href: "/membership/types",
         roles: ["admin"],
       },
+      {
+        label: "Applications",
+        href: "/membership-applications",
+        roles: ["admin"],
+      },
     ],
   },
   {

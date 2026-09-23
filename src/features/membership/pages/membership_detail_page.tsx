@@ -7,6 +7,7 @@ import {
   Button,
   ConfirmModal,
   Divider,
+  Modal,
   StatusBadge,
   Tabs,
 } from "@/components/ui";
@@ -14,10 +15,14 @@ import CustomTable, { columnType } from "@/components/tables/CustomTable";
 import PopUp, { Actions } from "@/components/tables/pop-up";
 import PageLoader from "@/components/PageLoader";
 import {
+  AlertTriangle,
   ArrowLeft,
+  Ban,
   Briefcase,
   Calendar,
+  CheckCircle,
   CheckCircle2,
+  Eye,
   FileText,
   HelpCircle,
   Info,
@@ -29,6 +34,7 @@ import {
   Trash2,
   Users,
   Wallet,
+  XCircle,
 } from "lucide-react";
 import { useMembershipDetail } from "../domain/data/hooks/membership_hook";
 import {
@@ -55,13 +61,81 @@ export default function MembershipDetailPage({
     updateMembership,
     togglePublish,
     removeMembership,
+    approveApplication,
+    rejectApplication,
+    cancelStudentMembership,
+    cancelOrder,
     refetch,
   } = useMembershipDetail(membershipId);
 
   const [activeTab, setActiveTab] = useState("overview");
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [memberSearch, setMemberSearch] = useState("");
+  const [trxSearch, setTrxSearch] = useState("");
   const [headerMenuIndex, setHeaderMenuIndex] = useState<number | null>(null);
+
+  // Approval / Denial modal states
+  const [approveModalItem, setApproveModalItem] = useState<
+    MembershipTransaction | MembershipSubscriber | null
+  >(null);
+  const [denyModalItem, setDenyModalItem] = useState<
+    MembershipTransaction | MembershipSubscriber | null
+  >(null);
+  const [denyReason, setDenyReason] = useState("");
+  const [cancelOrderTarget, setCancelOrderTarget] =
+    useState<MembershipTransaction | null>(null);
+  const [cancelSubTarget, setCancelSubTarget] =
+    useState<MembershipSubscriber | null>(null);
+  const [actionBusy, setActionBusy] = useState(false);
+
+  const handleApprove = async () => {
+    if (!approveModalItem) return;
+    setActionBusy(true);
+    try {
+      if (approveModalItem.applicationId) {
+        await approveApplication(approveModalItem.applicationId);
+      }
+      setApproveModalItem(null);
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
+  const handleDeny = async () => {
+    if (!denyModalItem || !denyReason.trim()) return;
+    setActionBusy(true);
+    try {
+      if (denyModalItem.applicationId) {
+        await rejectApplication(denyModalItem.applicationId, denyReason.trim());
+      }
+      setDenyModalItem(null);
+      setDenyReason("");
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
+  const handleCancelOrder = async () => {
+    if (!cancelOrderTarget?.orderNumber) return;
+    setActionBusy(true);
+    try {
+      await cancelOrder(cancelOrderTarget.orderNumber);
+      setCancelOrderTarget(null);
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
+  const handleCancelSub = async () => {
+    if (!cancelSubTarget?.studentMembershipId) return;
+    setActionBusy(true);
+    try {
+      await cancelStudentMembership(cancelSubTarget.studentMembershipId);
+      setCancelSubTarget(null);
+    } finally {
+      setActionBusy(false);
+    }
+  };
 
   // Filter subscribers
   const filteredSubscribers = useMemo(() => {
@@ -75,6 +149,20 @@ export default function MembershipDetailPage({
         s.phone.toLowerCase().includes(q),
     );
   }, [subscribers, memberSearch]);
+
+  // Filter transactions
+  const filteredTransactions = useMemo(() => {
+    const q = trxSearch.trim().toLowerCase();
+    if (!q) return transactions;
+    return transactions.filter(
+      (t) =>
+        t.memberName.toLowerCase().includes(q) ||
+        t.memberEmail.toLowerCase().includes(q) ||
+        t.reference.toLowerCase().includes(q) ||
+        t.paymentMethod.toLowerCase().includes(q) ||
+        t.status.toLowerCase().includes(q),
+    );
+  }, [transactions, trxSearch]);
 
   // Actions for header pop-up
   const headerActions: Actions[] = [
@@ -116,14 +204,23 @@ export default function MembershipDetailPage({
       label: "Member",
       render: (_, row) => (
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs shrink-0">
-            {row.name
-              .split(" ")
-              .map((n) => n[0])
-              .slice(0, 2)
-              .join("")
-              .toUpperCase()}
-          </div>
+          {row.avatar ? (
+            <img
+              src={row.avatar}
+              alt=""
+              className="w-9 h-9 rounded-full object-cover shrink-0 border border-[#E7E9EB]"
+            />
+          ) : (
+            <div className="w-9 h-9 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs shrink-0">
+              {row.name
+                .split(" ")
+                .filter(Boolean)
+                .map((n) => n[0])
+                .slice(0, 2)
+                .join("")
+                .toUpperCase() || "M"}
+            </div>
+          )}
           <div>
             <p className="text-sm font-semibold text-base-content leading-tight">
               {row.name}
@@ -150,7 +247,7 @@ export default function MembershipDetailPage({
       label: "Enrolled Date",
       render: (v) => (
         <span className="text-sm text-base-content/80 whitespace-nowrap">
-          {formatDate(v, "DD MMM YYYY")}
+          {v ? formatDate(v, "DD MMM YYYY") : "—"}
         </span>
       ),
     },
@@ -159,7 +256,7 @@ export default function MembershipDetailPage({
       label: "Expiry Date",
       render: (v) => (
         <span className="text-sm text-base-content/80 whitespace-nowrap">
-          {v?.startsWith("2099") ? "Lifetime" : formatDate(v, "DD MMM YYYY")}
+          {!v ? "—" : v?.startsWith("2099") ? "Lifetime" : formatDate(v, "DD MMM YYYY")}
         </span>
       ),
     },
@@ -168,7 +265,7 @@ export default function MembershipDetailPage({
       label: "Paid",
       render: (v, row) => (
         <span className="text-sm font-semibold text-base-content whitespace-nowrap">
-          {formatCurrency(Number(v) || 0, { currency: row.currency })}
+          {formatCurrency(Number(v) || 0, { currency: row.currency || "CAD" })}
         </span>
       ),
     },
@@ -183,8 +280,63 @@ export default function MembershipDetailPage({
     {
       key: "view_member",
       label: "View Member Details",
+      render: () => (
+        <span className="flex items-center gap-2 text-base-content/80 font-medium">
+          <Eye size={15} />
+          View Member Details
+        </span>
+      ),
       action: (row, r) => {
         r.push(`/students/${row.id}`);
+      },
+    },
+    {
+      key: "approve_member",
+      label: "Approve Membership",
+      render: () => (
+        <span className="flex items-center gap-2 text-emerald-600 font-medium">
+          <CheckCircle size={15} />
+          Approve Membership
+        </span>
+      ),
+      disabled: (row) =>
+        row.status === "active" ||
+        row.applicationStatus === "approved" ||
+        !row.applicationId,
+      action: (row) => {
+        setApproveModalItem(row);
+      },
+    },
+    {
+      key: "deny_member",
+      label: "Deny Membership",
+      render: () => (
+        <span className="flex items-center gap-2 text-rose-600 font-medium">
+          <XCircle size={15} />
+          Deny Membership
+        </span>
+      ),
+      disabled: (row) =>
+        row.status === "cancelled" ||
+        row.applicationStatus === "rejected" ||
+        !row.applicationId,
+      action: (row) => {
+        setDenyReason("");
+        setDenyModalItem(row);
+      },
+    },
+    {
+      key: "cancel_member",
+      label: "Cancel Membership",
+      render: () => (
+        <span className="flex items-center gap-2 text-rose-600 font-medium">
+          <Ban size={15} />
+          Cancel Membership
+        </span>
+      ),
+      disabled: (row) => row.status !== "active" || !row.studentMembershipId,
+      action: (row) => {
+        setCancelSubTarget(row);
       },
     },
   ];
@@ -217,7 +369,7 @@ export default function MembershipDetailPage({
       label: "Amount",
       render: (v, row) => (
         <span className="text-sm font-bold text-base-content whitespace-nowrap">
-          {formatCurrency(Number(v) || 0, { currency: row.currency })}
+          {formatCurrency(Number(v) || 0, { currency: row.currency || "CAD" })}
         </span>
       ),
     },
@@ -235,14 +387,140 @@ export default function MembershipDetailPage({
       label: "Date",
       render: (v) => (
         <span className="text-sm text-base-content/80 whitespace-nowrap">
-          {formatDate(v, "DD MMM YYYY, hh:mm A")}
+          {v ? formatDate(v, "DD MMM YYYY, hh:mm A") : "—"}
         </span>
       ),
     },
     {
       key: "status",
-      label: "Status",
+      label: "Payment Status",
       render: (v) => <StatusBadge status={v} />,
+    },
+    {
+      key: "applicationStatus",
+      label: "Membership Status",
+      render: (_, row) => {
+        const appStatus =
+          row.applicationStatus ||
+          (row.status === "confirmed" ? "approved" : "pending");
+
+        if (appStatus === "approved" || appStatus === "active") {
+          return (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <CheckCircle size={12} className="text-emerald-600" />
+              Approved
+            </span>
+          );
+        }
+
+        if (appStatus === "rejected" || appStatus === "cancelled") {
+          return (
+            <span
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200"
+              title={row.rejectReason || undefined}
+            >
+              <XCircle size={12} className="text-rose-600" />
+              Denied
+            </span>
+          );
+        }
+
+        return (
+          <div className="flex items-center gap-1.5">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+              Pending
+            </span>
+            {row.applicationId && (
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setApproveModalItem(row);
+                  }}
+                  className="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+                >
+                  Approve
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDenyReason("");
+                    setDenyModalItem(row);
+                  }}
+                  className="px-2 py-0.5 rounded text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white transition-colors"
+                >
+                  Deny
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
+  ];
+
+  const transactionActions: Actions<MembershipTransaction>[] = [
+    {
+      key: "approve_membership",
+      label: "Approve Membership",
+      render: () => (
+        <span className="flex items-center gap-2 text-emerald-600 font-medium">
+          <CheckCircle size={15} />
+          Approve Membership
+        </span>
+      ),
+      disabled: (row) =>
+        row.applicationStatus === "approved" || !row.applicationId,
+      action: (row) => {
+        setApproveModalItem(row);
+      },
+    },
+    {
+      key: "deny_membership",
+      label: "Deny Membership",
+      render: () => (
+        <span className="flex items-center gap-2 text-rose-600 font-medium">
+          <XCircle size={15} />
+          Deny Membership
+        </span>
+      ),
+      disabled: (row) =>
+        row.applicationStatus === "rejected" || !row.applicationId,
+      action: (row) => {
+        setDenyReason("");
+        setDenyModalItem(row);
+      },
+    },
+    {
+      key: "view_student",
+      label: "View Student Profile",
+      render: () => (
+        <span className="flex items-center gap-2 text-base-content/80 font-medium">
+          <Eye size={15} />
+          View Student Profile
+        </span>
+      ),
+      disabled: (row) => !row.studentId,
+      action: (row, r) => {
+        if (row.studentId) r.push(`/students/${row.studentId}`);
+      },
+    },
+    {
+      key: "cancel_order",
+      label: "Cancel Order",
+      render: () => (
+        <span className="flex items-center gap-2 text-amber-600 font-medium">
+          <Ban size={15} />
+          Cancel Order
+        </span>
+      ),
+      disabled: (row) => row.status !== "pending" || !row.orderNumber,
+      action: (row) => {
+        setCancelOrderTarget(row);
+      },
     },
   ];
 
@@ -349,7 +627,7 @@ export default function MembershipDetailPage({
               <div className="grid sm:grid-cols-4 gap-4">
                 <StatCard
                   title="Total Members"
-                  value={currentPlan.membersCount ?? 0}
+                  value={currentPlan.membersCount ?? subscribers.length}
                   loading={isLoading}
                   icon={<Users size={20} className="text-secondary" />}
                 />
@@ -361,10 +639,17 @@ export default function MembershipDetailPage({
                 />
                 <StatCard
                   title="Total Revenue"
-                  value={formatCurrency(currentPlan.amountPaid ?? 0, {
-                    currency: currentPlan.currency || "NGN",
-                    decimals: 0,
-                  })}
+                  value={formatCurrency(
+                    currentPlan.amountPaid ??
+                      transactions.reduce(
+                        (acc, t) => acc + (Number(t.amount) || 0),
+                        0,
+                      ),
+                    {
+                      currency: currentPlan.currency || "CAD",
+                      decimals: 0,
+                    },
+                  )}
                   loading={isLoading}
                   icon={<Wallet size={20} className="text-secondary" />}
                 />
@@ -375,7 +660,7 @@ export default function MembershipDetailPage({
                   <div className="mt-2">
                     <p className="text-xl font-bold text-base-content">
                       {formatCurrency(currentPlan.price, {
-                        currency: currentPlan.currency || "NGN",
+                        currency: currentPlan.currency || "CAD",
                       })}
                     </p>
                     <p className="text-xs text-base-content/60 capitalize mt-0.5">
@@ -882,12 +1167,19 @@ export default function MembershipDetailPage({
                 {/* Tab 3: Payment History */}
                 {activeTab === "transactions" && (
                   <div className="bg-white rounded-xl border border-[#E7E9EB] p-4 shadow-sm space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-base font-bold text-base-content">
-                        Transaction Records
-                      </h3>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 border border-[#E7E9EB] rounded-lg px-3 h-9 bg-white w-64 focus-within:border-primary transition-colors">
+                        <Search size={15} className="text-secondary" />
+                        <input
+                          type="text"
+                          value={trxSearch}
+                          onChange={(e) => setTrxSearch(e.target.value)}
+                          placeholder="Search transactions..."
+                          className="flex-1 text-xs outline-none focus:outline-none focus-visible:outline-none ring-0 bg-transparent placeholder-[#ADADAD]"
+                        />
+                      </div>
                       <p className="text-xs text-base-content/60">
-                        Total transactions: <b>{transactions.length}</b>
+                        Showing <b>{filteredTransactions.length}</b> transaction(s)
                       </p>
                     </div>
 
@@ -896,9 +1188,9 @@ export default function MembershipDetailPage({
                     <CustomTable
                       ring={false}
                       columns={transactionColumns}
-                      data={transactions}
-                      actions={[]}
-                      totalCount={transactions.length}
+                      data={filteredTransactions}
+                      actions={transactionActions}
+                      totalCount={filteredTransactions.length}
                     />
                   </div>
                 )}
@@ -920,6 +1212,213 @@ export default function MembershipDetailPage({
           setDeleteOpen(false);
           router.push("/membership");
         }}
+      />
+
+      {/* Approve Membership Modal */}
+      <Modal
+        open={!!approveModalItem}
+        onClose={() => !actionBusy && setApproveModalItem(null)}
+        title="Approve Membership"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs">
+            <CheckCircle className="shrink-0 text-emerald-600 mt-0.5" size={18} />
+            <div>
+              <p className="font-semibold text-emerald-900">
+                Activate Membership & Issue Certificate
+              </p>
+              <p className="mt-0.5 text-emerald-700">
+                Approving will immediately grant this member active access and generate their official membership certificate.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-2 text-sm bg-base-100 rounded-lg border border-[#E7E9EB] p-3">
+            <div className="flex justify-between items-center py-1 border-b border-base-200">
+              <span className="text-xs text-base-content/60">Applicant</span>
+              <span className="font-semibold text-base-content">
+                {"memberName" in (approveModalItem || {})
+                  ? (approveModalItem as MembershipTransaction).memberName
+                  : (approveModalItem as MembershipSubscriber)?.name}
+              </span>
+            </div>
+            <div className="flex justify-between items-center py-1 border-b border-base-200">
+              <span className="text-xs text-base-content/60">Email</span>
+              <span className="text-xs text-base-content">
+                {"memberEmail" in (approveModalItem || {})
+                  ? (approveModalItem as MembershipTransaction).memberEmail
+                  : (approveModalItem as MembershipSubscriber)?.email}
+              </span>
+            </div>
+            {"reference" in (approveModalItem || {}) && (
+              <div className="flex justify-between items-center py-1 border-b border-base-200">
+                <span className="text-xs text-base-content/60">Payment Ref</span>
+                <span className="text-xs font-mono text-primary font-semibold">
+                  {(approveModalItem as MembershipTransaction).reference}
+                </span>
+              </div>
+            )}
+            <div className="flex justify-between items-center py-1">
+              <span className="text-xs text-base-content/60">Plan</span>
+              <span className="font-semibold text-base-content">
+                {membership?.name}
+              </span>
+            </div>
+          </div>
+
+          {approveModalItem &&
+            "answers" in approveModalItem &&
+            Array.isArray(approveModalItem.answers) &&
+            approveModalItem.answers.length > 0 && (
+              <div className="bg-base-200/50 rounded-lg p-3 border border-base-200 space-y-2">
+                <p className="text-xs font-bold uppercase tracking-wider text-base-content/70">
+                  Screening Answers
+                </p>
+                {approveModalItem.answers.map(
+                  (ans: { questionId: string; answer: boolean | string }, idx: number) => {
+                    const qText =
+                      membership?.applicationQuestions?.find(
+                        (q) => q.id === ans.questionId,
+                      )?.question || `Question ${idx + 1}`;
+                    return (
+                      <div key={idx} className="text-xs">
+                        <p className="font-medium text-base-content">{qText}</p>
+                        <p className="text-emerald-700 font-semibold">
+                          {typeof ans.answer === "boolean"
+                            ? ans.answer
+                              ? "Yes"
+                              : "No"
+                            : String(ans.answer)}
+                        </p>
+                      </div>
+                    );
+                  },
+                )}
+              </div>
+            )}
+
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button
+              variant="secondary"
+              size="md"
+              disabled={actionBusy}
+              onClick={() => setApproveModalItem(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="md"
+              loading={actionBusy}
+              onClick={handleApprove}
+              className="bg-emerald-600 hover:bg-emerald-700 border-none text-white"
+            >
+              Approve Membership
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Deny Membership Modal */}
+      <Modal
+        open={!!denyModalItem}
+        onClose={() => !actionBusy && setDenyModalItem(null)}
+        title="Deny Membership Application"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs">
+            <AlertTriangle className="shrink-0 text-rose-600 mt-0.5" size={18} />
+            <div>
+              <p className="font-semibold text-rose-900">
+                Deny Membership Application
+              </p>
+              <p className="mt-0.5 text-rose-700">
+                Denying will reject the student membership application. Please provide a clear reason for the applicant.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-1 text-sm bg-base-100 rounded-lg border border-[#E7E9EB] p-3">
+            <div className="flex justify-between items-center py-1 border-b border-base-200">
+              <span className="text-xs text-base-content/60">Applicant</span>
+              <span className="font-semibold text-base-content">
+                {"memberName" in (denyModalItem || {})
+                  ? (denyModalItem as MembershipTransaction).memberName
+                  : (denyModalItem as MembershipSubscriber)?.name}
+              </span>
+            </div>
+            <div className="flex justify-between items-center py-1">
+              <span className="text-xs text-base-content/60">Email</span>
+              <span className="text-xs text-base-content">
+                {"memberEmail" in (denyModalItem || {})
+                  ? (denyModalItem as MembershipTransaction).memberEmail
+                  : (denyModalItem as MembershipSubscriber)?.email}
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-base-content">
+              Reason for Denial <span className="text-rose-500">*</span>
+            </label>
+            <textarea
+              rows={3}
+              value={denyReason}
+              onChange={(e) => setDenyReason(e.target.value)}
+              placeholder="e.g. Applicant did not meet minimum experience criteria or documentation was incomplete..."
+              className="w-full text-xs rounded-lg border border-[#E7E9EB] p-3 focus:outline-none focus:border-rose-500 transition-colors"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button
+              variant="secondary"
+              size="md"
+              disabled={actionBusy}
+              onClick={() => {
+                setDenyModalItem(null);
+                setDenyReason("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              size="md"
+              loading={actionBusy}
+              disabled={!denyReason.trim() || actionBusy}
+              onClick={handleDeny}
+            >
+              Deny Application
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Cancel Pending Order Modal */}
+      <ConfirmModal
+        open={!!cancelOrderTarget}
+        onClose={() => setCancelOrderTarget(null)}
+        title="Cancel Pending Order"
+        description={`Are you sure you want to cancel pending order ${cancelOrderTarget?.orderNumber || cancelOrderTarget?.reference}? This action cannot be undone.`}
+        confirmLabel="Cancel Order"
+        variant="danger"
+        loading={actionBusy}
+        onConfirm={handleCancelOrder}
+      />
+
+      {/* Cancel Active Student Membership Modal */}
+      <ConfirmModal
+        open={!!cancelSubTarget}
+        onClose={() => setCancelSubTarget(null)}
+        title="Cancel Student Membership"
+        description={`Are you sure you want to cancel the membership for ${cancelSubTarget?.name}? This will revoke their membership certificate and benefits.`}
+        confirmLabel="Cancel Membership"
+        variant="danger"
+        loading={actionBusy}
+        onConfirm={handleCancelSub}
       />
     </DashboardLayout>
   );

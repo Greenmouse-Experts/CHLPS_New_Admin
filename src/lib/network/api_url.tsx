@@ -109,6 +109,15 @@ export class ApiUrls {
     return `/student-memberships/${id}/cancel`;
   }
 
+  // Membership Applications (Review, Approve & Deny)
+  static membershipApplications = "/membership-applications";
+  static approveMembershipApplication(id: string) {
+    return `/membership-applications/${id}/approve`;
+  }
+  static rejectMembershipApplication(id: string) {
+    return `/membership-applications/${id}/reject`;
+  }
+
   // Events
   static events = "/events";
   static createEvent = "/events";

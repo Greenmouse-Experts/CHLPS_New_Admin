@@ -95,8 +95,53 @@ export interface Membership {
   createdDate?: string;
 }
 
+export interface MembershipApplicationAnswer {
+  questionId: string;
+  answer: boolean | string;
+}
+
+export interface MembershipApplicationItem {
+  id: string;
+  orderId?: string;
+  answers?: MembershipApplicationAnswer[];
+  status: "pending" | "approved" | "rejected" | string;
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
+  rejectReason?: string | null;
+  createdDate?: string;
+  updatedDate?: string;
+  student?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone?: string;
+    picture?: string;
+  };
+  membership?: {
+    id: string;
+    name: string;
+    price: number;
+    currency: string;
+    duration?: string;
+    description?: string;
+    applicationQuestions?: Array<{ id: string; question: string }>;
+  };
+  order?: {
+    id?: string;
+    number?: string;
+    status?: string;
+    reference?: string;
+    amount?: number;
+    currency?: string;
+  };
+}
+
 export interface MembershipSubscriber {
   id: string;
+  studentMembershipId?: string;
+  applicationId?: string;
+  applicationStatus?: "pending" | "approved" | "rejected" | string;
   membershipId: string;
   memberNumber: string;
   name: string;
@@ -105,13 +150,16 @@ export interface MembershipSubscriber {
   avatar?: string;
   joinedDate: string;
   expiryDate: string;
-  status: "active" | "expired" | "pending" | string;
+  status: "active" | "expired" | "pending" | "pending_approval" | string;
   amountPaid: number;
   currency: MembershipCurrency;
+  answers?: MembershipApplicationAnswer[];
 }
 
 export interface MembershipTransaction {
   id: string;
+  orderId?: string;
+  orderNumber?: string;
   membershipId: string;
   reference: string;
   memberName: string;
@@ -121,6 +169,11 @@ export interface MembershipTransaction {
   paymentMethod: "card" | "bank_transfer" | "wallet" | string;
   status: "successful" | "pending" | "failed" | string;
   date: string;
+  applicationId?: string;
+  applicationStatus?: "pending" | "approved" | "rejected" | string;
+  rejectReason?: string | null;
+  studentId?: string;
+  answers?: MembershipApplicationAnswer[];
 }
 
 export interface MembershipStats {
@@ -144,6 +197,18 @@ export type MembershipApiResponse = ApiResponse<Membership>;
 export type MembershipStatsApiResponse = ApiResponse<MembershipStats>;
 export type MembershipTypesApiResponse = ApiResponse<{
   items: MembershipTypeItem[];
+  count: number;
+}>;
+export type MembershipSubscribersApiResponse = ApiResponse<{
+  items: MembershipSubscriber[];
+  count: number;
+}>;
+export type MembershipTransactionsApiResponse = ApiResponse<{
+  items: MembershipTransaction[];
+  count: number;
+}>;
+export type MembershipApplicationsApiResponse = ApiResponse<{
+  items: MembershipApplicationItem[];
   count: number;
 }>;
 
