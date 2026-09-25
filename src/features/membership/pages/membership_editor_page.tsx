@@ -62,6 +62,8 @@ interface FormValues {
   image?: string | null;
   banner?: string | null;
   bannerText?: string;
+  certificate?: string | null;
+  certificationText?: string;
   status: MembershipStatus;
 
   // Career & Value Highlights
@@ -166,6 +168,8 @@ function getFormDefaults(membership?: Membership | null): FormValues {
     image: membership?.image ?? null,
     banner: membership?.banner ?? null,
     bannerText: membership?.bannerText ?? "",
+    certificate: membership?.certificate ?? null,
+    certificationText: membership?.certificationText ?? "",
     status: membership?.status ?? "draft",
 
     careerPathways: (membership?.careerPathways?.length
@@ -246,6 +250,7 @@ export default function MembershipEditorPage({
   const watchRequiredDocs = watch("requiredDocuments") || [];
   const watchImage = watch("image");
   const watchBanner = watch("banner");
+  const watchCertificate = watch("certificate");
   const isLifetime = currentDuration === "Lifetime";
   const showRenewal = !isLifetime && autoRenewal;
 
@@ -485,6 +490,8 @@ export default function MembershipEditorPage({
       image: values.image || null,
       banner: values.banner || null,
       bannerText: values.bannerText?.trim() || undefined,
+      certificate: values.certificate || null,
+      certificationText: values.certificationText?.trim() || undefined,
       careerPathways,
       jobOpportunities,
       howMembershipHelps,
@@ -849,18 +856,19 @@ export default function MembershipEditorPage({
                   </div>
                 </div>
 
-                {/* Media & Promotional Banners */}
+                {/* Media, Banner & Certificate */}
                 <div className="bg-white rounded-xl border border-[#E7E9EB] p-6 shadow-sm space-y-5">
                   <div>
                     <h2 className="text-base font-bold text-base-content">
-                      Media & Promotional Banners
+                      Media, Banner & Certificate
                     </h2>
                     <p className="text-xs text-base-content/60">
-                      Upload badge icons, hero banners, and promotional headline text for this membership plan.
+                      Upload badge icons, hero banners, certificate templates,
+                      and promotional headline text.
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Badge / Thumbnail Image */}
                     <div className="space-y-2">
                       <label className="block text-xs font-semibold text-base-content/80">
@@ -888,18 +896,48 @@ export default function MembershipEditorPage({
                         helperText="Recommended: Wide 16:9 banner for promotional displays."
                       />
                     </div>
+
+                    {/* Official Certificate Image / Template */}
+                    <div className="space-y-2">
+                      <label className="block text-xs font-semibold text-base-content/80">
+                        Certificate (Image / Template)
+                      </label>
+                      <ImageUpload
+                        value={watchCertificate || null}
+                        onChange={(url) =>
+                          setValue("certificate", url, { shouldDirty: true })
+                        }
+                        folder="chlps_memberships"
+                        helperText="Official certificate background or template image issued to members."
+                      />
+                    </div>
                   </div>
 
-                  {/* Banner CTA Text */}
-                  <div>
-                    <SimpleInput
-                      label="Banner Headline / CTA Text"
-                      placeholder="e.g. Join the CLPA Program Today"
-                      {...register("bannerText")}
-                    />
-                    <p className="text-xs text-base-content/50 mt-1">
-                      Promotional call-to-action text displayed with the hero banner.
-                    </p>
+                  {/* Banner CTA Text & Certification Statement */}
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <SimpleInput
+                        label="Banner Headline / CTA Text"
+                        placeholder="e.g. Join the CLPA Program Today"
+                        {...register("bannerText")}
+                      />
+                      <p className="text-xs text-base-content/50 mt-1">
+                        Promotional call-to-action text displayed with the hero
+                        banner.
+                      </p>
+                    </div>
+
+                    <div>
+                      <SimpleTextArea
+                        label="Certification Statement / Description"
+                        placeholder="e.g. Members receive an officially accredited CLPA membership certification."
+                        rows={2}
+                        {...register("certificationText")}
+                      />
+                      <p className="text-xs text-base-content/50 mt-1">
+                        Official certification details and credential text awarded to members.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1313,7 +1351,7 @@ export default function MembershipEditorPage({
 
                     <SimpleTextArea
                       label="Section Description"
-                      placeholder="Starting early provides a strong foundation...\n\nIt also helps you understand..."
+                      placeholder="Starting early provides a strong foundation...&#10;&#10;It also helps you understand..."
                       rows={3}
                       {...register("whyJoinNow.description")}
                     />

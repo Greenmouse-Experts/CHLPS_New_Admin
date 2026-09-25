@@ -686,6 +686,46 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
                       )}
                     </div>
 
+                    {/* Official Course Certification */}
+                    {(course.certificationImage || course.certificationText) && (
+                      <div className="bg-white rounded-2xl border border-base-300 p-6 shadow-xs space-y-4">
+                        <div className="flex items-center gap-2">
+                          <Award size={18} className="text-primary" />
+                          <h3 className="text-base font-bold text-base-content">
+                            Official Course Certification
+                          </h3>
+                        </div>
+                        <Divider />
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                          {course.certificationImage && (
+                            <div className="md:col-span-5 rounded-xl overflow-hidden border border-base-200 bg-base-100 shadow-xs">
+                              <img
+                                src={course.certificationImage}
+                                alt="Official Certification"
+                                className="w-full h-auto object-cover"
+                              />
+                            </div>
+                          )}
+                          <div
+                            className={
+                              course.certificationImage
+                                ? "md:col-span-7 space-y-2"
+                                : "md:col-span-12 space-y-2"
+                            }
+                          >
+                            <span className="text-xs font-bold text-primary uppercase bg-primary/10 px-2.5 py-1 rounded">
+                              Awarded Credential
+                            </span>
+                            {course.certificationText && (
+                              <p className="text-sm text-base-content/90 font-medium leading-relaxed pt-1">
+                                {course.certificationText}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Certification Benefits */}
                     {course.certificationBenefits &&
                       course.certificationBenefits.length > 0 && (

@@ -15,6 +15,7 @@ export interface ImageUploadProps {
   required?: boolean;
   disabled?: boolean;
   maxSizeMB?: number;
+  folder?: string;
   className?: string;
 }
 

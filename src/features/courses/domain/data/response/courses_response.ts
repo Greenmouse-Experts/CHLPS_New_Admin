@@ -40,6 +40,8 @@ export interface Course {
   coverImage?: string;
   banner?: string | null;
   bannerText?: string;
+  certificationImage?: string | null;
+  certificationText?: string;
   createdDate?: string;
   updatedDate?: string;
   program?: { id: string; title: string } | null;
@@ -98,6 +100,8 @@ export interface CreateCoursePayload {
   coverImage: string;
   banner?: string | null;
   bannerText?: string;
+  certificationImage?: string | null;
+  certificationText?: string;
   previewUrl?: string | null;
   isPublished?: boolean;
   outcomes: CourseOutcome[];

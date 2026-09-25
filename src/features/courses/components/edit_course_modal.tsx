@@ -18,6 +18,7 @@ import SimpleInput from "@/components/inputs/SimpleInput";
 import SimpleTextArea from "@/components/inputs/SimpleTextArea";
 import LocalSelect from "@/components/inputs/LocalSelect";
 import { Button, RichTextField } from "@/components/ui";
+import { ImageUpload } from "@/components/ui/ImageUpload";
 import { Trash2 } from "lucide-react";
 import {
   Course,
@@ -49,6 +50,8 @@ interface CourseFormValues {
   price: string;
   discount: string;
   program: string;
+  certificationImage?: string | null;
+  certificationText?: string;
   outcomes: CourseOutcome[];
 }
 
@@ -60,6 +63,8 @@ function getCourseFormDefaults(c?: Course | null): CourseFormValues {
     price: c?.price !== undefined ? String(c.price) : "",
     discount: c?.discount !== undefined ? String(c.discount) : "0",
     program: c?.program?.id ?? "",
+    certificationImage: c?.certificationImage ?? null,
+    certificationText: c?.certificationText ?? "",
     outcomes: c?.courseOutcomes?.length
       ? c.courseOutcomes.map((o) => ({
           description: o.description,
@@ -90,6 +95,8 @@ export const EditCourseModal = forwardRef<EditCourseModalHandle, Props>(
       control: methods.control,
       name: "outcomes",
     });
+
+    const watchCertificationImage = methods.watch("certificationImage");
 
     const initForm = (targetCourse: Course | null) => {
       setCurrentCourse(targetCourse);
@@ -135,6 +142,8 @@ export const EditCourseModal = forwardRef<EditCourseModalHandle, Props>(
         price: Number(data.price),
         discount: Number(data.discount) || 0,
         program: data.program,
+        certificationImage: data.certificationImage || null,
+        certificationText: data.certificationText?.trim() || undefined,
         outcomes: data.outcomes
           .map((o, idx) => ({
             description: o.description.trim(),
@@ -256,7 +265,32 @@ export const EditCourseModal = forwardRef<EditCourseModalHandle, Props>(
                 />
               </div>
 
-              <div className="sm:col-span-2 space-y-2">
+              <div className="sm:col-span-2 space-y-4 pt-2 border-t border-base-200">
+                <h4 className="font-semibold text-sm text-base-content">
+                  Certification Details
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <ImageUpload
+                    label="Certification Image / Template"
+                    value={watchCertificationImage || null}
+                    onChange={(url) =>
+                      methods.setValue("certificationImage", url, {
+                        shouldDirty: true,
+                      })
+                    }
+                    folder="chlps_courses"
+                    helperText="Official certificate preview/template."
+                  />
+                  <SimpleTextArea
+                    label="Certification Statement / Text"
+                    placeholder="e.g. Successful students receive the internationally recognized CLPA certification."
+                    rows={3}
+                    {...methods.register("certificationText")}
+                  />
+                </div>
+              </div>
+
+              <div className="sm:col-span-2 space-y-2 pt-2 border-t border-base-200">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-base-content">
                     Course Outcomes
@@ -297,7 +331,7 @@ export const EditCourseModal = forwardRef<EditCourseModalHandle, Props>(
                 ))}
               </div>
 
-              <div className="sm:col-span-2 space-y-2">
+              <div className="sm:col-span-2 space-y-2 pt-2 border-t border-base-200">
                 <span className="text-sm font-semibold text-base-content block">
                   Cover Image
                 </span>

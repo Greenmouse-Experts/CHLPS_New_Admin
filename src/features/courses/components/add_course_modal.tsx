@@ -12,6 +12,7 @@ import SimpleInput from "@/components/inputs/SimpleInput";
 import SimpleTextArea from "@/components/inputs/SimpleTextArea";
 import LocalSelect from "@/components/inputs/LocalSelect";
 import { Button, RichTextField } from "@/components/ui";
+import { ImageUpload } from "@/components/ui/ImageUpload";
 import { Trash2 } from "lucide-react";
 import {
   CreateCoursePayload,
@@ -35,6 +36,8 @@ interface CourseFormValues {
   price: string;
   discount: string;
   program: string;
+  certificationImage?: string | null;
+  certificationText?: string;
   outcomes: CourseOutcome[];
 }
 
@@ -52,6 +55,8 @@ export const AddCourseModal = forwardRef<ModalHandle, Props>(
         price: "",
         discount: "",
         program: "",
+        certificationImage: null,
+        certificationText: "",
         outcomes: [{ description: "", order: 1 }],
       },
     });
@@ -60,6 +65,8 @@ export const AddCourseModal = forwardRef<ModalHandle, Props>(
       control: methods.control,
       name: "outcomes",
     });
+
+    const watchCertificationImage = methods.watch("certificationImage");
 
     useImperativeHandle(ref, () => ({
       open: () => {
@@ -70,6 +77,8 @@ export const AddCourseModal = forwardRef<ModalHandle, Props>(
           price: "",
           discount: "",
           program: "",
+          certificationImage: null,
+          certificationText: "",
           outcomes: [{ description: "", order: 1 }],
         });
         setFile(null);
@@ -96,6 +105,8 @@ export const AddCourseModal = forwardRef<ModalHandle, Props>(
           price: Number(data.price),
           discount: Number(data.discount) || 0,
           program: data.program,
+          certificationImage: data.certificationImage || null,
+          certificationText: data.certificationText?.trim() || undefined,
           previewUrl: null,
           outcomes: data.outcomes.map((o, idx) => ({
             description: o.description,
@@ -193,7 +204,32 @@ export const AddCourseModal = forwardRef<ModalHandle, Props>(
                 />
               </div>
 
-              <div className="sm:col-span-2 space-y-2">
+              <div className="sm:col-span-2 space-y-4 pt-2 border-t border-base-200">
+                <h4 className="font-semibold text-sm text-base-content">
+                  Certification Details
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <ImageUpload
+                    label="Certification Image / Template"
+                    value={watchCertificationImage || null}
+                    onChange={(url) =>
+                      methods.setValue("certificationImage", url, {
+                        shouldDirty: true,
+                      })
+                    }
+                    folder="chlps_courses"
+                    helperText="Official certificate preview/template."
+                  />
+                  <SimpleTextArea
+                    label="Certification Statement / Text"
+                    placeholder="e.g. Successful students receive the internationally recognized CLPA certification."
+                    rows={3}
+                    {...methods.register("certificationText")}
+                  />
+                </div>
+              </div>
+
+              <div className="sm:col-span-2 space-y-2 pt-2 border-t border-base-200">
                 <div className="fieldset-label font-semibold">
                   <span className="text-sm">Course Outcomes</span>
                 </div>
@@ -232,7 +268,7 @@ export const AddCourseModal = forwardRef<ModalHandle, Props>(
                 </Button>
               </div>
 
-              <div className="sm:col-span-2 space-y-2">
+              <div className="sm:col-span-2 space-y-2 pt-2 border-t border-base-200">
                 <div className="fieldset-label font-semibold">
                   <span className="text-sm">Cover image</span>
                 </div>

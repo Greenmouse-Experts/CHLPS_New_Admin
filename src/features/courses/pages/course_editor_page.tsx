@@ -49,6 +49,8 @@ interface CourseFormValues {
   coverImage?: string | null;
   banner?: string | null;
   bannerText?: string;
+  certificationImage?: string | null;
+  certificationText?: string;
   isPublished: boolean;
 
   outcomes: { description: string; order: number }[];
@@ -60,7 +62,7 @@ interface CourseFormValues {
 const TABS = [
   { key: "general", label: "General & Details" },
   { key: "outcomes", label: "Learning Outcomes" },
-  { key: "certification", label: "Benefits & Requirements" },
+  { key: "certification", label: "Certification, Benefits & Requirements" },
   { key: "questions", label: "Application Questions" },
 ] as const;
 
@@ -77,6 +79,8 @@ function getCourseFormDefaults(c?: Course | null): CourseFormValues {
     coverImage: c?.coverImage ?? null,
     banner: c?.banner ?? null,
     bannerText: c?.bannerText ?? "",
+    certificationImage: c?.certificationImage ?? null,
+    certificationText: c?.certificationText ?? "",
     isPublished: Boolean(c?.isPublished),
 
     outcomes: c?.courseOutcomes?.length
@@ -88,13 +92,15 @@ function getCourseFormDefaults(c?: Course | null): CourseFormValues {
 
     certificationBenefits: c?.certificationBenefits?.length
       ? c.certificationBenefits.map((b: unknown) => ({
-          value: typeof b === "string" ? b : (b as { value?: string })?.value || "",
+          value:
+            typeof b === "string" ? b : (b as { value?: string })?.value || "",
         }))
       : [{ value: "" }],
 
     entryRequirements: c?.entryRequirements?.length
       ? c.entryRequirements.map((r: unknown) => ({
-          value: typeof r === "string" ? r : (r as { value?: string })?.value || "",
+          value:
+            typeof r === "string" ? r : (r as { value?: string })?.value || "",
         }))
       : [{ value: "" }],
 
@@ -129,11 +135,7 @@ function FieldError({ children }: { children?: React.ReactNode }) {
   return <p className="text-xs text-error mt-1">{children}</p>;
 }
 
-export default function CourseEditorPage({
-  courseId,
-}: {
-  courseId?: string;
-}) {
+export default function CourseEditorPage({ courseId }: { courseId?: string }) {
   const router = useRouter();
   const { toast } = useToast();
   const role = useSelector((s: RootState) => s.user.userRole);
@@ -171,6 +173,7 @@ export default function CourseEditorPage({
 
   const watchCoverImage = watch("coverImage");
   const watchBanner = watch("banner");
+  const watchCertificationImage = watch("certificationImage");
   const watchIsPublished = watch("isPublished");
 
   // Field Arrays
@@ -236,9 +239,7 @@ export default function CourseEditorPage({
       }
     } catch (err: unknown) {
       setIsError(true);
-      setErrorMsg(
-        err instanceof Error ? err.message : "Error fetching course",
-      );
+      setErrorMsg(err instanceof Error ? err.message : "Error fetching course");
     } finally {
       setLoadingInitial(false);
     }
@@ -310,6 +311,8 @@ export default function CourseEditorPage({
       coverImage: values.coverImage,
       banner: values.banner || null,
       bannerText: values.bannerText?.trim() || undefined,
+      certificationImage: values.certificationImage || null,
+      certificationText: values.certificationText?.trim() || undefined,
       previewUrl: null,
       isPublished: values.isPublished,
       outcomes,
@@ -405,7 +408,9 @@ export default function CourseEditorPage({
                 size="sm"
                 leftIcon={<ArrowLeft size={14} />}
                 onClick={() =>
-                  router.push(isEdit && courseId ? `/courses/${courseId}` : "/courses")
+                  router.push(
+                    isEdit && courseId ? `/courses/${courseId}` : "/courses",
+                  )
                 }
               >
                 Back
@@ -430,7 +435,9 @@ export default function CourseEditorPage({
                 variant="ghost"
                 size="sm"
                 onClick={() =>
-                  router.push(isEdit && courseId ? `/courses/${courseId}` : "/courses")
+                  router.push(
+                    isEdit && courseId ? `/courses/${courseId}` : "/courses",
+                  )
                 }
               >
                 Cancel
@@ -542,13 +549,17 @@ export default function CourseEditorPage({
                             <CheckCircle2 size={14} /> Published
                           </span>
                         ) : (
-                          <span className="text-amber-600">Draft / Unpublished</span>
+                          <span className="text-amber-600">
+                            Draft / Unpublished
+                          </span>
                         )}
                       </span>
                       <Toggle
                         checked={watchIsPublished}
                         onChange={(checked: boolean) =>
-                          setValue("isPublished", checked, { shouldDirty: true })
+                          setValue("isPublished", checked, {
+                            shouldDirty: true,
+                          })
                         }
                       />
                     </div>
@@ -646,7 +657,8 @@ export default function CourseEditorPage({
                     Media & Promotional Banners
                   </h2>
                   <p className="text-xs text-base-content/60">
-                    Upload course cover thumbnail, wide promotional hero banner, and CTA headline text.
+                    Upload course cover thumbnail, wide promotional hero banner,
+                    and CTA headline text.
                   </p>
                 </div>
 
@@ -693,7 +705,8 @@ export default function CourseEditorPage({
                     {...register("bannerText")}
                   />
                   <p className="text-xs text-base-content/50 mt-1">
-                    Promotional call-to-action text displayed with the hero banner.
+                    Promotional call-to-action text displayed with the hero
+                    banner.
                   </p>
                 </div>
               </div>
@@ -706,9 +719,12 @@ export default function CourseEditorPage({
                   <div className="flex items-center gap-2">
                     <ListOrdered size={20} className="text-primary" />
                     <div>
-                      <FieldLabel required>What You Will Learn / Course Outcomes</FieldLabel>
+                      <FieldLabel required>
+                        What You Will Learn / Course Outcomes
+                      </FieldLabel>
                       <p className="text-xs text-base-content/60">
-                        Key competencies and practical skills students acquire from this course.
+                        Key competencies and practical skills students acquire
+                        from this course.
                       </p>
                     </div>
                   </div>
@@ -766,21 +782,67 @@ export default function CourseEditorPage({
               </div>
             </div>
 
-            {/* TAB 3: Benefits & Requirements */}
+            {/* TAB 3: Certification, Benefits & Requirements */}
             <div
               className={activeTab === "certification" ? "space-y-6" : "hidden"}
             >
+              {/* Official Course Certification */}
+              <div className="bg-white rounded-xl border border-[#E7E9EB] p-6 shadow-sm space-y-5">
+                <div>
+                  <h2 className="text-base font-bold text-base-content flex items-center gap-2">
+                    <Award size={20} className="text-primary" />
+                    Official Certification & Recognition
+                  </h2>
+                  <p className="text-xs text-base-content/60">
+                    Upload course completion certificate image/template and
+                    certification description statement.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Certification Image */}
+                  <div className="space-y-2">
+                    <FieldLabel>Certification Image / Template</FieldLabel>
+                    <ImageUpload
+                      value={watchCertificationImage || null}
+                      onChange={(url) =>
+                        setValue("certificationImage", url, {
+                          shouldDirty: true,
+                        })
+                      }
+                      folder="chlps_courses"
+                      helperText="Official certificate preview image awarded upon completing this course."
+                    />
+                  </div>
+
+                  {/* Certification Text */}
+                  <div className="space-y-2">
+                    <SimpleTextArea
+                      label="Certification Statement / Text"
+                      placeholder="e.g. Successful students receive the internationally recognized CLPA certification."
+                      rows={4}
+                      {...register("certificationText")}
+                    />
+                    <p className="text-xs text-base-content/50">
+                      Summary text explaining the credential, accreditation, or
+                      certificate details.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* Certification Benefits */}
               <div className="bg-white rounded-xl border border-[#E7E9EB] p-6 shadow-sm space-y-5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Award size={20} className="text-primary" />
+                    <Award size={20} className="text-amber-500" />
                     <div>
                       <h2 className="text-base font-bold text-base-content">
                         Certification Benefits
                       </h2>
                       <p className="text-xs text-base-content/60">
-                        Credibility and career advantages gained upon earning this certificate.
+                        Credibility and career advantages gained upon earning
+                        this certificate.
                       </p>
                     </div>
                   </div>
@@ -822,7 +884,8 @@ export default function CourseEditorPage({
 
                 {benefitFields.length === 0 && (
                   <p className="text-xs text-secondary italic py-3 text-center bg-base-200/20 rounded-lg">
-                    No certification benefits added. Click &quot;Add Benefit&quot; to highlight career advantages.
+                    No certification benefits added. Click &quot;Add
+                    Benefit&quot; to highlight career advantages.
                   </p>
                 )}
               </div>
@@ -837,7 +900,8 @@ export default function CourseEditorPage({
                         Entry Requirements & Prerequisites
                       </h2>
                       <p className="text-xs text-base-content/60">
-                        Academic background, experience, or prior credentials required to enrol.
+                        Academic background, experience, or prior credentials
+                        required to enrol.
                       </p>
                     </div>
                   </div>
@@ -879,7 +943,8 @@ export default function CourseEditorPage({
 
                 {requirementFields.length === 0 && (
                   <p className="text-xs text-secondary italic py-3 text-center bg-base-200/20 rounded-lg">
-                    No entry requirements specified. Click &quot;Add Requirement&quot; to outline criteria.
+                    No entry requirements specified. Click &quot;Add
+                    Requirement&quot; to outline criteria.
                   </p>
                 )}
               </div>
@@ -896,7 +961,8 @@ export default function CourseEditorPage({
                         Application & Screening Questions
                       </h2>
                       <p className="text-xs text-base-content/60">
-                        Questions applicants must answer during course checkout or enrolment.
+                        Questions applicants must answer during course checkout
+                        or enrolment.
                       </p>
                     </div>
                   </div>
@@ -938,7 +1004,8 @@ export default function CourseEditorPage({
 
                 {questionFields.length === 0 && (
                   <p className="text-xs text-secondary italic py-3 text-center bg-base-200/20 rounded-lg">
-                    No application questions configured. Click &quot;Add Question&quot; to collect applicant answers.
+                    No application questions configured. Click &quot;Add
+                    Question&quot; to collect applicant answers.
                   </p>
                 )}
               </div>
