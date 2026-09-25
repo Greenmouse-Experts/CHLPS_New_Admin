@@ -69,6 +69,7 @@ interface FormValues {
   banner?: string | null;
   bannerText?: string;
   certificate?: string | null;
+  certificationText?: string;
   status: MembershipStatus;
 
   // Career & Value Highlights
@@ -167,6 +168,7 @@ function getFormDefaults(membership?: Membership | null): FormValues {
     banner: membership?.banner ?? null,
     bannerText: membership?.bannerText ?? "",
     certificate: membership?.certificate ?? null,
+    certificationText: membership?.certificationText ?? "",
     status: membership?.status ?? "draft",
 
     careerPathways: (membership?.careerPathways?.length
@@ -480,6 +482,7 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
         banner: values.banner || null,
         bannerText: values.bannerText?.trim() || undefined,
         certificate: values.certificate || null,
+        certificationText: values.certificationText?.trim() || undefined,
         careerPathways,
         jobOpportunities,
         howMembershipHelps,
@@ -761,12 +764,22 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
                         />
                       </div>
                     </div>
-                    <div>
-                      <SimpleInput
-                        label="Banner Headline / CTA Text"
-                        placeholder="e.g. Join the CLPA Program Today"
-                        {...register("bannerText")}
-                      />
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div>
+                        <SimpleInput
+                          label="Banner Headline / CTA Text"
+                          placeholder="e.g. Join the CLPA Program Today"
+                          {...register("bannerText")}
+                        />
+                      </div>
+                      <div>
+                        <SimpleTextArea
+                          label="Certification Statement / Description"
+                          placeholder="e.g. Members receive an officially accredited CLPA membership certification."
+                          rows={2}
+                          {...register("certificationText")}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

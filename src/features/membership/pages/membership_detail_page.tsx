@@ -16,6 +16,7 @@ import PopUp, { Actions } from "@/components/tables/pop-up";
 import PageLoader from "@/components/PageLoader";
 import {
   AlertTriangle,
+  Award,
   ArrowLeft,
   Ban,
   Briefcase,
@@ -808,6 +809,46 @@ export default function MembershipDetailPage({
                           )}
                         </div>
                       </div>
+
+                      {/* Official Certificate Information */}
+                      {(currentPlan.certificate || currentPlan.certificationText) && (
+                        <div className="bg-white rounded-xl border border-[#E7E9EB] p-6 shadow-sm space-y-4">
+                          <div className="flex items-center gap-2">
+                            <Award size={20} className="text-amber-500" />
+                            <h3 className="text-base font-bold text-base-content">
+                              Official Membership Certificate
+                            </h3>
+                          </div>
+                          <Divider />
+                          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                            {currentPlan.certificate && (
+                              <div className="md:col-span-5 rounded-xl overflow-hidden border border-base-200 bg-base-100 shadow-xs">
+                                <img
+                                  src={currentPlan.certificate}
+                                  alt="Membership Certificate"
+                                  className="w-full h-auto object-cover max-h-48"
+                                />
+                              </div>
+                            )}
+                            <div
+                              className={
+                                currentPlan.certificate
+                                  ? "md:col-span-7 space-y-2"
+                                  : "md:col-span-12 space-y-2"
+                              }
+                            >
+                              <span className="text-xs font-bold text-amber-700 uppercase bg-amber-50 border border-amber-200 px-2.5 py-1 rounded">
+                                Issued Certificate Credential
+                              </span>
+                              {currentPlan.certificationText && (
+                                <p className="text-sm text-base-content/90 font-medium leading-relaxed pt-1">
+                                  {currentPlan.certificationText}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Why Join Now Section */}
                       {currentPlan.whyJoinNow && (

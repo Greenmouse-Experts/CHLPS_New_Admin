@@ -63,6 +63,7 @@ interface FormValues {
   banner?: string | null;
   bannerText?: string;
   certificate?: string | null;
+  certificationText?: string;
   status: MembershipStatus;
 
   // Career & Value Highlights
@@ -168,6 +169,7 @@ function getFormDefaults(membership?: Membership | null): FormValues {
     banner: membership?.banner ?? null,
     bannerText: membership?.bannerText ?? "",
     certificate: membership?.certificate ?? null,
+    certificationText: membership?.certificationText ?? "",
     status: membership?.status ?? "draft",
 
     careerPathways: (membership?.careerPathways?.length
@@ -489,6 +491,7 @@ export default function MembershipEditorPage({
       banner: values.banner || null,
       bannerText: values.bannerText?.trim() || undefined,
       certificate: values.certificate || null,
+      certificationText: values.certificationText?.trim() || undefined,
       careerPathways,
       jobOpportunities,
       howMembershipHelps,
@@ -912,17 +915,31 @@ export default function MembershipEditorPage({
                     </div>
                   </div>
 
-                  {/* Banner CTA Text */}
-                  <div>
-                    <SimpleInput
-                      label="Banner Headline / CTA Text"
-                      placeholder="e.g. Join the CLPA Program Today"
-                      {...register("bannerText")}
-                    />
-                    <p className="text-xs text-base-content/50 mt-1">
-                      Promotional call-to-action text displayed with the hero
-                      banner.
-                    </p>
+                  {/* Banner CTA Text & Certification Statement */}
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <SimpleInput
+                        label="Banner Headline / CTA Text"
+                        placeholder="e.g. Join the CLPA Program Today"
+                        {...register("bannerText")}
+                      />
+                      <p className="text-xs text-base-content/50 mt-1">
+                        Promotional call-to-action text displayed with the hero
+                        banner.
+                      </p>
+                    </div>
+
+                    <div>
+                      <SimpleTextArea
+                        label="Certification Statement / Description"
+                        placeholder="e.g. Members receive an officially accredited CLPA membership certification."
+                        rows={2}
+                        {...register("certificationText")}
+                      />
+                      <p className="text-xs text-base-content/50 mt-1">
+                        Official certification details and credential text awarded to members.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
