@@ -879,7 +879,6 @@ export default function MembershipEditorPage({
                         onChange={(url) =>
                           setValue("image", url, { shouldDirty: true })
                         }
-                        folder="chlps_memberships"
                         helperText="Badge or icon image displayed on membership cards."
                       />
                     </div>
@@ -894,7 +893,6 @@ export default function MembershipEditorPage({
                         onChange={(url) =>
                           setValue("banner", url, { shouldDirty: true })
                         }
-                        folder="chlps_memberships"
                         helperText="Recommended: Wide 16:9 banner for promotional displays."
                       />
                     </div>

@@ -5,15 +5,12 @@ import UploadRepository from "@/features/uploads/domain/repository/upload_reposi
 
 export interface UseImageUploadOptions {
   maxSizeMB?: number;
-  folder?: string;
   onSuccess?: (url: string) => void;
   onError?: (err: string) => void;
 }
 
 export function useImageUpload(options?: UseImageUploadOptions) {
   const maxSizeMB = options?.maxSizeMB ?? 5;
-  const folder = options?.folder ?? "chlps_admin";
-
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
@@ -39,65 +36,6 @@ export function useImageUpload(options?: UseImageUploadOptions) {
       setIsUploading(true);
       setError(null);
 
-      // Strategy 1: Cloudinary direct unsigned upload if configured
-      const cloudName =
-        process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "chlps";
-      const uploadPreset =
-        process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET ||
-        process.env.NEXT_PUBLIC_CLOUDINARY ||
-        process.env.NEXT_CLOUDINARY;
-
-      if (cloudName && uploadPreset) {
-        try {
-          const body = new FormData();
-          body.append("file", file);
-          body.append("upload_preset", uploadPreset);
-          if (folder) body.append("folder", folder);
-
-          const res = await fetch(
-            `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-            { method: "POST", body },
-          );
-
-          if (res.ok) {
-            const data = await res.json();
-            if (data.secure_url) {
-              setUploadedUrl(data.secure_url);
-              options?.onSuccess?.(data.secure_url);
-              setIsUploading(false);
-              return data.secure_url;
-            }
-          }
-        } catch {
-          // Proceed to fallback
-        }
-      }
-
-      // Strategy 2: Server-side Next.js route using Cloudinary Node SDK
-      try {
-        const apiBody = new FormData();
-        apiBody.append("file", file);
-        apiBody.append("folder", folder);
-
-        const serverRes = await fetch("/api/upload/cloudinary", {
-          method: "POST",
-          body: apiBody,
-        });
-
-        if (serverRes.ok) {
-          const data = await serverRes.json();
-          if (data.success && data.url) {
-            setUploadedUrl(data.url);
-            options?.onSuccess?.(data.url);
-            setIsUploading(false);
-            return data.url;
-          }
-        }
-      } catch {
-        // Proceed to backend fallback
-      }
-
-      // Strategy 3: Backend upload repository fallback
       try {
         const uploads = new UploadRepository();
         const res = await uploads.upload("image", file);
@@ -121,7 +59,7 @@ export function useImageUpload(options?: UseImageUploadOptions) {
 
       return null;
     },
-    [folder, maxSizeMB, options],
+    [maxSizeMB, options],
   );
 
   const reset = useCallback(() => {
@@ -139,5 +77,4 @@ export function useImageUpload(options?: UseImageUploadOptions) {
   };
 }
 
-export const useCloudinaryUpload = useImageUpload;
 export default useImageUpload;

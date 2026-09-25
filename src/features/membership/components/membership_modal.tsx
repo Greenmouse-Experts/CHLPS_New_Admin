@@ -737,7 +737,6 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
                           onChange={(url) =>
                             setValue("image", url, { shouldDirty: true })
                           }
-                          folder="chlps_memberships"
                           helperText="Badge image displayed on membership cards."
                         />
                       </div>
@@ -748,7 +747,6 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
                           onChange={(url) =>
                             setValue("banner", url, { shouldDirty: true })
                           }
-                          folder="chlps_memberships"
                           helperText="Recommended: Wide 16:9 promotional banner."
                         />
                       </div>

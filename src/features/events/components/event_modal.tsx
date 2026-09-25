@@ -446,7 +446,7 @@ export function EventModal({
               </LocalSelect>
             </div>
 
-            {/* Cloudinary Cover Image */}
+            {/* Cover Image */}
             <div className="sm:col-span-2">
               <ImageUpload
                 label="Event Cover Image / Poster"
@@ -456,8 +456,7 @@ export function EventModal({
                   setValue("image", img, { shouldDirty: true });
                   if (img) clearErrors("coverImage");
                 }}
-                folder="chlps_events"
-                helperText="Upload event cover banner or promotional poster to Cloudinary."
+                helperText="Upload event cover banner or promotional poster."
               />
               {errors.coverImage && (
                 <FieldError>{String(errors.coverImage.message)}</FieldError>
@@ -499,7 +498,6 @@ export function EventModal({
                           shouldDirty: true,
                         })
                       }
-                      folder="chlps_events"
                       helperText={`Gallery image #${idx + 1}`}
                     />
                   </div>
