@@ -68,6 +68,7 @@ interface FormValues {
   image?: string | null;
   banner?: string | null;
   bannerText?: string;
+  certificate?: string | null;
   status: MembershipStatus;
 
   // Career & Value Highlights
@@ -165,14 +166,15 @@ function getFormDefaults(membership?: Membership | null): FormValues {
     image: membership?.image ?? null,
     banner: membership?.banner ?? null,
     bannerText: membership?.bannerText ?? "",
+    certificate: membership?.certificate ?? null,
     status: membership?.status ?? "draft",
 
-    careerPathways:
-      (membership?.careerPathways?.length ? membership.careerPathways : []).map(
-        (v: unknown) => ({
-          value: typeof v === "string" ? v : (v as { value?: string })?.value || "",
-        }),
-      ),
+    careerPathways: (membership?.careerPathways?.length
+      ? membership.careerPathways
+      : []
+    ).map((v: unknown) => ({
+      value: typeof v === "string" ? v : (v as { value?: string })?.value || "",
+    })),
 
     jobOpportunities:
       membership?.jobOpportunities?.map((item) => ({
@@ -254,6 +256,7 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
     const watchRequiredDocs = watch("requiredDocuments") || [];
     const watchImage = watch("image");
     const watchBanner = watch("banner");
+    const watchCertificate = watch("certificate");
     const isLifetime = currentDuration === "Lifetime";
     const showRenewal = !isLifetime && autoRenewal;
 
@@ -476,6 +479,7 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
         image: values.image || null,
         banner: values.banner || null,
         bannerText: values.bannerText?.trim() || undefined,
+        certificate: values.certificate || null,
         careerPathways,
         jobOpportunities,
         howMembershipHelps,
@@ -720,9 +724,9 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
                     </>
                   )}
 
-                  {/* Cloudinary Image & Banner Upload */}
+                  {/* Media, Banner & Certificate Upload */}
                   <div className="sm:col-span-2 space-y-4 pt-2 border-t border-base-200">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div>
                         <ImageUpload
                           label="Membership Badge / Card Image"
@@ -743,6 +747,17 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
                           }
                           folder="chlps_memberships"
                           helperText="Recommended: Wide 16:9 promotional banner."
+                        />
+                      </div>
+                      <div>
+                        <ImageUpload
+                          label="Certificate (Image / Template)"
+                          value={watchCertificate || null}
+                          onChange={(url) =>
+                            setValue("certificate", url, { shouldDirty: true })
+                          }
+                          folder="chlps_memberships"
+                          helperText="Official certificate background or template image."
                         />
                       </div>
                     </div>
@@ -968,9 +983,7 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() =>
-                        appendJob({ title: "", description: "" })
-                      }
+                      onClick={() => appendJob({ title: "", description: "" })}
                       leftIcon={<AddCircle size={14} />}
                     >
                       Add Opportunity
@@ -1086,9 +1099,7 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
                           label="Description"
                           placeholder="Describe how this feature assists the applicant..."
                           rows={2}
-                          {...register(
-                            `howMembershipHelps.${idx}.description`,
-                          )}
+                          {...register(`howMembershipHelps.${idx}.description`)}
                         />
                       </div>
                     </div>

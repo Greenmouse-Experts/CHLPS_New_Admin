@@ -89,6 +89,7 @@ export interface Membership {
   image?: string | null;
   banner?: string | null;
   bannerText?: string;
+  certificate?: string | null;
   membersCount?: number;
   membersThisMonth?: number;
   amountPaid?: number;
