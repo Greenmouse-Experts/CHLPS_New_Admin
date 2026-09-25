@@ -720,7 +720,7 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
                     </>
                   )}
 
-                  {/* Cloudinary Image & Banner Upload */}
+                  {/* Image & Banner Upload */}
                   <div className="sm:col-span-2 space-y-4 pt-2 border-t border-base-200">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
@@ -730,7 +730,6 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
                           onChange={(url) =>
                             setValue("image", url, { shouldDirty: true })
                           }
-                          folder="chlps_memberships"
                           helperText="Badge image displayed on membership cards."
                         />
                       </div>
@@ -741,7 +740,6 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
                           onChange={(url) =>
                             setValue("banner", url, { shouldDirty: true })
                           }
-                          folder="chlps_memberships"
                           helperText="Recommended: Wide 16:9 promotional banner."
                         />
                       </div>

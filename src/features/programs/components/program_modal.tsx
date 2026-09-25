@@ -119,7 +119,6 @@ export function ProgramModal({
           <ImageUpload
             value={coverImage}
             onChange={(url) => setCoverImage(url)}
-            folder="chlps_programs"
             helperText="Recommended: 16:9 ratio image. Max 5MB."
           />
         </div>

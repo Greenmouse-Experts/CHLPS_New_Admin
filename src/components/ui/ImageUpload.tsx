@@ -15,7 +15,6 @@ export interface ImageUploadProps {
   required?: boolean;
   disabled?: boolean;
   maxSizeMB?: number;
-  folder?: string;
   className?: string;
 }
 
@@ -28,7 +27,6 @@ export function ImageUpload({
   required,
   disabled,
   maxSizeMB = 5,
-  folder = "chlps_admin",
   className,
 }: ImageUploadProps) {
   const [dragOver, setDragOver] = useState(false);
@@ -36,7 +34,6 @@ export function ImageUpload({
 
   const { uploadImage, isUploading, error: uploadError } = useImageUpload({
     maxSizeMB,
-    folder,
     onSuccess: (url) => onChange(url),
   });
 
@@ -162,7 +159,7 @@ export function ImageUpload({
               <>
                 <div className="w-8 h-8 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
                 <p className="text-xs font-medium text-base-content">
-                  Uploading image to Cloudinary...
+                  Uploading image...
                 </p>
               </>
             ) : (

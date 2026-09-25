@@ -662,7 +662,6 @@ export default function CourseEditorPage({
                           shouldValidate: true,
                         })
                       }
-                      folder="chlps_courses"
                       helperText="Recommended: 16:9 or 1200x630 card thumbnail. Max 5MB."
                     />
                     {errors.coverImage && (
@@ -681,7 +680,6 @@ export default function CourseEditorPage({
                           shouldValidate: true,
                         })
                       }
-                      folder="chlps_courses"
                       helperText="Recommended: Wide 16:9 banner for promotional displays."
                     />
                   </div>

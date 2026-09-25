@@ -1580,7 +1580,6 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
             <ImageUpload
               value={assessmentMedia}
               onChange={(url) => setAssessmentMedia(url)}
-              folder="chlps_assessments"
               helperText="Upload an image/banner for this assessment (PNG, JPG, WEBP). Max 5MB."
             />
           </div>
