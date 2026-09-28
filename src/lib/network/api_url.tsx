@@ -254,11 +254,19 @@ export class ApiUrls {
   // Testimonials
   static testimonials = "/testimonials";
   static testimonialsPublished = "/testimonials/published";
+  static testimonialsCurated = "/testimonials/curated";
+  static adminTestimonials = "/admins/testimonials";
+  static adminTestimonialById(id: string) {
+    return `/admins/testimonials/${id}`;
+  }
+  static adminTestimonialAvailability(id: string) {
+    return `/admins/testimonials/change-availability/${id}`;
+  }
   static testimonialAvailability(id: string) {
-    return `/testimonials/change-availability/${id}`;
+    return `/admins/testimonials/change-availability/${id}`;
   }
   static testimonialById(id: string) {
-    return `/testimonials/${id}`;
+    return `/admins/testimonials/${id}`;
   }
 
   // Certificates
