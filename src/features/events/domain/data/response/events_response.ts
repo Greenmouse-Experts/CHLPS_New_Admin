@@ -156,3 +156,37 @@ export interface UpdateEventCategoryPayload {
   name?: string;
   isPublished?: boolean;
 }
+
+export interface EventRegistrationItem {
+  id: string;
+  registrationId?: string;
+  verificationCode?: string;
+  qrCodeUrl?: string | null;
+  status?: string;
+  paymentStatus?: string;
+  attendanceStatus?: string;
+  checkedInAt?: string | null;
+  createdDate?: string;
+  user?: {
+    id?: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+    picture?: string;
+  };
+  transaction?: {
+    id?: string;
+    reference?: string;
+    status?: string;
+    amount?: number;
+    subAmount?: number;
+    gateway?: string;
+    createdDate?: string;
+  };
+}
+
+export type EventRegistrationsApiResponse = ApiResponse<{
+  items: EventRegistrationItem[];
+  count: number;
+}>;

@@ -9,6 +9,8 @@ import {
 } from "@/lib/tokens";
 import {
   CreateEventCategoryPayload,
+  EventRegistrationItem,
+  EventRegistrationsApiResponse,
   EventApiResponse,
   EventCategoriesApiResponse,
   EventCategoryItem,
@@ -54,11 +56,21 @@ export class EventsRepository {
     return fail(res.message || "Failed to fetch event statistics");
   }
 
-  public async listRegistrations(id: string) {
+  public async listRegistrations(
+    id: string,
+    params?: Record<string, unknown>,
+  ): Promise<EventRegistrationsApiResponse> {
     const res = await this._api.getData<unknown>(
       ApiUrls.eventRegistrations(id),
+      params,
     );
-    return res;
+    if (res.success) {
+      return ok({
+        items: unwrapList<EventRegistrationItem>(res.data),
+        count: unwrapCount(res.data, unwrapList(res.data).length),
+      });
+    }
+    return fail(res.message || "Failed to fetch event registrations");
   }
 
   public async checkIn(id: string, code: string) {

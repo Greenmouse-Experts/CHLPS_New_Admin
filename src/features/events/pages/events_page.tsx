@@ -81,7 +81,13 @@ export default function EventsPage() {
               <div className="w-10 h-10 rounded-lg bg-base-200 shrink-0" />
             )}
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-base-content line-clamp-1 hover:underline cursor-pointer">
+              <p
+                onClick={(e) => {
+                  e.stopPropagation();
+                  router.push(`/events/${row.id}`);
+                }}
+                className="text-sm font-semibold text-base-content line-clamp-1 hover:text-primary hover:underline cursor-pointer"
+              >
                 {row.name}
               </p>
               <p className="text-xs text-secondary line-clamp-1">
@@ -153,6 +159,11 @@ export default function EventsPage() {
     {
       key: "view_details",
       label: "View Details",
+      action: (row) => router.push(`/events/${row.id}`),
+    },
+    {
+      key: "preview_quick",
+      label: "Quick Preview",
       action: (row) => openDetailModal(row),
     },
     {
@@ -264,7 +275,7 @@ export default function EventsPage() {
               data={events}
               actions={actions}
               totalCount={total}
-              onRowClick={(row) => openDetailModal(row)}
+              onRowClick={(row) => router.push(`/events/${row.id}`)}
               paginationProps={{
                 page,
                 pageSize,
