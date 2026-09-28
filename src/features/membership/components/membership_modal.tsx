@@ -68,7 +68,9 @@ interface FormValues {
   image?: string | null;
   banner?: string | null;
   bannerText?: string;
+  certificateImage?: string | null;
   certificate?: string | null;
+  certificationImage?: string | null;
   certificationText?: string;
   status: MembershipStatus;
 
@@ -167,7 +169,21 @@ function getFormDefaults(membership?: Membership | null): FormValues {
     image: membership?.image ?? null,
     banner: membership?.banner ?? null,
     bannerText: membership?.bannerText ?? "",
-    certificate: membership?.certificate ?? null,
+    certificateImage:
+      membership?.certificateImage ??
+      membership?.certificationImage ??
+      membership?.certificate ??
+      null,
+    certificate:
+      membership?.certificateImage ??
+      membership?.certificationImage ??
+      membership?.certificate ??
+      null,
+    certificationImage:
+      membership?.certificationImage ??
+      membership?.certificateImage ??
+      membership?.certificate ??
+      null,
     certificationText: membership?.certificationText ?? "",
     status: membership?.status ?? "draft",
 
@@ -258,7 +274,7 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
     const watchRequiredDocs = watch("requiredDocuments") || [];
     const watchImage = watch("image");
     const watchBanner = watch("banner");
-    const watchCertificate = watch("certificate");
+    const watchCertificateImage = watch("certificateImage") || watch("certificate");
     const isLifetime = currentDuration === "Lifetime";
     const showRenewal = !isLifetime && autoRenewal;
 
@@ -481,7 +497,8 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
         image: values.image || null,
         banner: values.banner || null,
         bannerText: values.bannerText?.trim() || undefined,
-        certificate: values.certificate || null,
+        certificateImage: values.certificateImage || values.certificate || null,
+        certificationImage: values.certificateImage || values.certificate || null,
         certificationText: values.certificationText?.trim() || undefined,
         careerPathways,
         jobOpportunities,
@@ -753,10 +770,12 @@ export const MembershipModal = forwardRef<ModalHandle, Props>(
                       <div>
                         <ImageUpload
                           label="Certificate (Image / Template)"
-                          value={watchCertificate || null}
-                          onChange={(url) =>
-                            setValue("certificate", url, { shouldDirty: true })
-                          }
+                          value={watchCertificateImage || null}
+                          onChange={(url) => {
+                            setValue("certificateImage", url, { shouldDirty: true });
+                            setValue("certificate", url, { shouldDirty: true });
+                            setValue("certificationImage", url, { shouldDirty: true });
+                          }}
                           folder="chlps_memberships"
                           helperText="Official certificate background or template image."
                         />

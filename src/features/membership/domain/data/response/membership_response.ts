@@ -90,6 +90,8 @@ export interface Membership {
   banner?: string | null;
   bannerText?: string;
   certificate?: string | null;
+  certificateImage?: string | null;
+  certificationImage?: string | null;
   certificationText?: string;
   membersCount?: number;
   membersThisMonth?: number;
