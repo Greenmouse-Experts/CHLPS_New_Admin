@@ -590,6 +590,7 @@ export default function CourseEditorPage({ courseId }: { courseId?: string }) {
                         <RichTextField
                           value={field.value || ""}
                           onChange={field.onChange}
+                          minHeight="380px"
                           placeholder="Comprehensive course overview covering modules, expectations, and goals..."
                         />
                       )}

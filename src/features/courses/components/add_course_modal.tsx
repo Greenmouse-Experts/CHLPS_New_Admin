@@ -198,7 +198,7 @@ export const AddCourseModal = forwardRef<ModalHandle, Props>(
                       label="Full description"
                       value={field.value}
                       onChange={field.onChange}
-                      minHeight="120px"
+                      minHeight="240px"
                     />
                   )}
                 />
