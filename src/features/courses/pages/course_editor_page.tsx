@@ -19,6 +19,7 @@ import { RichTextField } from "@/components/ui/RichTextField";
 import {
   ArrowLeft,
   Award,
+  Briefcase,
   BookOpen,
   CheckCircle2,
   FileCheck2,
@@ -56,6 +57,7 @@ interface CourseFormValues {
   outcomes: { description: string; order: number }[];
   certificationBenefits: { value: string }[];
   entryRequirements: { value: string }[];
+  jobOpportunities: { title: string; description: string }[];
   applicationQuestions: { question: string }[];
 }
 
@@ -103,6 +105,13 @@ function getCourseFormDefaults(c?: Course | null): CourseFormValues {
             typeof r === "string" ? r : (r as { value?: string })?.value || "",
         }))
       : [{ value: "" }],
+
+    jobOpportunities: c?.jobOpportunities?.length
+      ? c.jobOpportunities.map((j) => ({
+          title: j.title || "",
+          description: j.description || "",
+        }))
+      : [],
 
     applicationQuestions: c?.applicationQuestions?.length
       ? c.applicationQuestions.map((q: unknown) => ({
@@ -205,6 +214,15 @@ export default function CourseEditorPage({ courseId }: { courseId?: string }) {
   });
 
   const {
+    fields: jobOpportunityFields,
+    append: appendJobOpportunity,
+    remove: removeJobOpportunity,
+  } = useFieldArray({
+    control,
+    name: "jobOpportunities",
+  });
+
+  const {
     fields: questionFields,
     append: appendQuestion,
     remove: removeQuestion,
@@ -295,6 +313,13 @@ export default function CourseEditorPage({ courseId }: { courseId?: string }) {
       .map((r) => r.value.trim())
       .filter(Boolean);
 
+    const jobOpportunities = (values.jobOpportunities || [])
+      .map((j) => ({
+        title: j.title.trim(),
+        description: j.description.trim(),
+      }))
+      .filter((j) => j.title.length > 0 || j.description.length > 0);
+
     const applicationQuestions = (values.applicationQuestions || [])
       .map((q) => ({
         question: q.question.trim(),
@@ -318,6 +343,7 @@ export default function CourseEditorPage({ courseId }: { courseId?: string }) {
       outcomes,
       certificationBenefits,
       entryRequirements,
+      jobOpportunities,
       applicationQuestions,
     };
 
@@ -954,6 +980,79 @@ export default function CourseEditorPage({ courseId }: { courseId?: string }) {
                     Requirement&quot; to outline criteria.
                   </p>
                 )}
+              </div>
+
+              {/* Job Opportunities */}
+              <div className="bg-white rounded-xl border border-[#E7E9EB] p-6 shadow-sm space-y-5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Briefcase size={20} className="text-primary" />
+                    <div>
+                      <h2 className="text-base font-bold text-base-content">
+                        Job & Career Opportunities
+                      </h2>
+                      <p className="text-xs text-base-content/60">
+                        Potential career paths and roles graduates can pursue upon completing this course.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => appendJobOpportunity({ title: "", description: "" })}
+                    leftIcon={<Plus size={14} />}
+                  >
+                    Add Opportunity
+                  </Button>
+                </div>
+
+                <div className="space-y-4">
+                  {jobOpportunityFields.map((field, idx) => (
+                    <div
+                      key={field.id}
+                      className="p-4 rounded-xl border border-[#E7E9EB] bg-base-200/20 space-y-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-base-content/80 flex items-center gap-1.5">
+                          <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-bold">
+                            {idx + 1}
+                          </span>
+                          Opportunity #{idx + 1}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="xs"
+                          className="text-error hover:bg-error/10"
+                          onClick={() => removeJobOpportunity(idx)}
+                        >
+                          <Trash2 size={14} /> Remove
+                        </Button>
+                      </div>
+
+                      <div className="space-y-3">
+                        <SimpleInput
+                          label="Role Title"
+                          placeholder="e.g. Loss Prevention Specialist"
+                          {...register(`jobOpportunities.${idx}.title`)}
+                        />
+                        <SimpleTextArea
+                          label="Description"
+                          placeholder="e.g. Work in retail, corporate security, or risk management."
+                          rows={2}
+                          {...register(`jobOpportunities.${idx}.description`)}
+                        />
+                      </div>
+                    </div>
+                  ))}
+
+                  {jobOpportunityFields.length === 0 && (
+                    <p className="text-xs text-secondary italic py-3 text-center bg-base-200/20 rounded-lg">
+                      No job opportunities added. Click &quot;Add Opportunity&quot; to outline target career roles.
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
 

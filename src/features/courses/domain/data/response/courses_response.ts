@@ -27,6 +27,12 @@ export interface CourseInstructor {
   createdDate?: string;
 }
 
+export interface JobOpportunity {
+  title: string;
+  description: string;
+  iconUrl?: string | null;
+}
+
 export interface Course {
   id: string;
   title: string;
@@ -50,6 +56,7 @@ export interface Course {
   courseOutcomes?: CourseOutcome[];
   certificationBenefits?: string[];
   entryRequirements?: string[];
+  jobOpportunities?: JobOpportunity[];
   applicationQuestions?: { question: string }[];
 }
 
@@ -107,6 +114,7 @@ export interface CreateCoursePayload {
   outcomes: CourseOutcome[];
   certificationBenefits?: string[];
   entryRequirements?: string[];
+  jobOpportunities?: JobOpportunity[];
   applicationQuestions?: { question: string }[];
 }
 
