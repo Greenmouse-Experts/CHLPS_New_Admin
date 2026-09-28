@@ -50,7 +50,9 @@ export default function TestimonialsPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "published" | "draft">("all");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "published" | "draft"
+  >("all");
 
   // Dialogs
   const [confirm, setConfirm] = useState<{
@@ -77,9 +79,7 @@ export default function TestimonialsPage() {
   const load = async (p = 1) => {
     setLoading(true);
     const filterParam =
-      statusFilter === "all"
-        ? undefined
-        : statusFilter === "published";
+      statusFilter === "all" ? undefined : statusFilter === "published";
     const res = await repo.list(isAdmin, p, 30, filterParam);
 
     if (res.success && res.data) {
@@ -213,7 +213,10 @@ export default function TestimonialsPage() {
         const isPublish = confirm.type === "publish";
         const res = await repo.setPublished(confirm.id, isPublish);
         if (res.success) {
-          toast(res.message || (isPublish ? "Published" : "Retracted"), "success");
+          toast(
+            res.message || (isPublish ? "Published" : "Retracted"),
+            "success",
+          );
           load(page);
         } else {
           toast(res.message, "danger");
@@ -239,19 +242,17 @@ export default function TestimonialsPage() {
               </h1>
             </div>
             <p className="text-xs text-base-content/60 max-w-2xl leading-relaxed">
-              Curate and publish member reviews and success stories for the public website. Showcase student achievements and organizational endorsements.
+              Curate and publish member reviews and success stories for the
+              public website. Showcase student achievements and organizational
+              endorsements.
             </p>
           </div>
 
           {isAdmin && (
             <div className="flex items-center gap-2 shrink-0">
-              <Button
-                variant="primary"
-                onClick={handleOpenCreate}
-                className="gap-2 shadow-xs"
-              >
+              <button onClick={handleOpenCreate} className="btn btn-primary">
                 <Plus size={16} /> Add Testimonial
-              </Button>
+              </button>
             </div>
           )}
         </div>
@@ -260,8 +261,12 @@ export default function TestimonialsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-white rounded-xl border border-[#E7E9EB] p-4 flex items-center justify-between shadow-xs">
             <div>
-              <p className="text-xs text-base-content/60 font-medium">Total Testimonials</p>
-              <h3 className="text-2xl font-bold text-base-content mt-0.5">{stats.total}</h3>
+              <p className="text-xs text-base-content/60 font-medium">
+                Total Testimonials
+              </p>
+              <h3 className="text-2xl font-bold text-base-content mt-0.5">
+                {stats.total}
+              </h3>
             </div>
             <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-semibold">
               <MessageSquare size={18} />
@@ -270,8 +275,12 @@ export default function TestimonialsPage() {
 
           <div className="bg-white rounded-xl border border-[#E7E9EB] p-4 flex items-center justify-between shadow-xs">
             <div>
-              <p className="text-xs text-base-content/60 font-medium">Published Live</p>
-              <h3 className="text-2xl font-bold text-emerald-600 mt-0.5">{stats.published}</h3>
+              <p className="text-xs text-base-content/60 font-medium">
+                Published Live
+              </p>
+              <h3 className="text-2xl font-bold text-emerald-600 mt-0.5">
+                {stats.published}
+              </h3>
             </div>
             <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-semibold">
               <CheckCircle2 size={18} />
@@ -280,8 +289,12 @@ export default function TestimonialsPage() {
 
           <div className="bg-white rounded-xl border border-[#E7E9EB] p-4 flex items-center justify-between shadow-xs">
             <div>
-              <p className="text-xs text-base-content/60 font-medium">Draft / Unpublished</p>
-              <h3 className="text-2xl font-bold text-amber-600 mt-0.5">{stats.draft}</h3>
+              <p className="text-xs text-base-content/60 font-medium">
+                Draft / Unpublished
+              </p>
+              <h3 className="text-2xl font-bold text-amber-600 mt-0.5">
+                {stats.draft}
+              </h3>
             </div>
             <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-semibold">
               <Clock size={18} />
@@ -297,7 +310,9 @@ export default function TestimonialsPage() {
             <input
               type="text"
               value={search}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setSearch(e.target.value)
+              }
               placeholder="Search by author, company, quote..."
               className="flex-1 text-xs outline-none bg-transparent placeholder-base-content/40 text-base-content"
             />
@@ -317,7 +332,7 @@ export default function TestimonialsPage() {
                   "px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition",
                   statusFilter === filterKey
                     ? "bg-brand-primary text-white shadow-xs"
-                    : "bg-base-200/50 text-base-content/70 hover:bg-base-200"
+                    : "bg-base-200/50 text-base-content/70 hover:bg-base-200",
                 )}
               >
                 {filterKey}
@@ -351,8 +366,13 @@ export default function TestimonialsPage() {
               </p>
               {isAdmin && !search && (
                 <div className="pt-2">
-                  <Button variant="primary" size="sm" onClick={handleOpenCreate}>
-                    <Plus size={14} className="mr-1" /> Add Your First Testimonial
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handleOpenCreate}
+                  >
+                    <Plus size={14} className="mr-1" /> Add Your First
+                    Testimonial
                   </Button>
                 </div>
               )}
@@ -417,7 +437,7 @@ export default function TestimonialsPage() {
                           className={cn(
                             i < rating
                               ? "fill-amber-400 text-amber-400"
-                              : "text-base-300 fill-base-200"
+                              : "text-base-300 fill-base-200",
                           )}
                         />
                       ))}
@@ -437,7 +457,10 @@ export default function TestimonialsPage() {
                     {/* Location & Meta */}
                     {t.location && (
                       <div className="flex items-center gap-1.5 text-[11px] text-base-content/50 pt-1 border-t border-[#F2F3F4]">
-                        <MapPin size={12} className="shrink-0 text-base-content/40" />
+                        <MapPin
+                          size={12}
+                          className="shrink-0 text-base-content/40"
+                        />
                         <span className="truncate">{t.location}</span>
                       </div>
                     )}
@@ -469,7 +492,7 @@ export default function TestimonialsPage() {
                             "text-xs px-2 h-8",
                             t.isPublished
                               ? "text-amber-600 hover:text-amber-700"
-                              : "text-emerald-600 hover:text-emerald-700"
+                              : "text-emerald-600 hover:text-emerald-700",
                           )}
                         >
                           {t.isPublished ? (
@@ -564,7 +587,10 @@ export default function TestimonialsPage() {
                 placeholder="e.g. Jane Doe"
                 value={formData.displayName || ""}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setFormData((prev) => ({ ...prev, displayName: e.target.value }))
+                  setFormData((prev) => ({
+                    ...prev,
+                    displayName: e.target.value,
+                  }))
                 }
               />
             </div>
@@ -611,7 +637,10 @@ export default function TestimonialsPage() {
                 placeholder="e.g. Horizon Security Group"
                 value={formData.organization || ""}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setFormData((prev) => ({ ...prev, organization: e.target.value }))
+                  setFormData((prev) => ({
+                    ...prev,
+                    organization: e.target.value,
+                  }))
                 }
               />
             </div>
@@ -691,8 +720,8 @@ export default function TestimonialsPage() {
           confirm?.type === "delete"
             ? "Delete Testimonial"
             : confirm?.type === "publish"
-            ? "Publish Testimonial"
-            : "Retract Testimonial"
+              ? "Publish Testimonial"
+              : "Retract Testimonial"
         }
         description={
           confirm?.type === "delete"
@@ -700,8 +729,8 @@ export default function TestimonialsPage() {
                 confirm.title || "this author"
               }?`
             : confirm?.type === "publish"
-            ? `Are you sure you want to publish this testimonial live on the website?`
-            : `Are you sure you want to unpublish/retract this testimonial from the public view?`
+              ? `Are you sure you want to publish this testimonial live on the website?`
+              : `Are you sure you want to unpublish/retract this testimonial from the public view?`
         }
         variant={confirm?.type === "delete" ? "danger" : "primary"}
         onConfirm={handleConfirmAction}
