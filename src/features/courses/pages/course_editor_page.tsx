@@ -303,8 +303,8 @@ export default function CourseEditorPage({ courseId }: { courseId?: string }) {
 
     const payload: CreateCoursePayload = {
       title: values.title.trim(),
-      shortDesc: values.shortDesc.trim(),
-      fullDesc: values.fullDesc.trim(),
+      shortDesc: (values.shortDesc || "").trim(),
+      fullDesc: (values.fullDesc || values.shortDesc || "").trim(),
       price: priceNum,
       discount: discountNum,
       program: values.program,
@@ -566,26 +566,31 @@ export default function CourseEditorPage({ courseId }: { courseId?: string }) {
                   </div>
 
                   <div className="sm:col-span-2">
-                    <SimpleTextArea
-                      label="Short Description"
-                      placeholder="Brief overview summarizing the course content..."
-                      rows={2}
-                      required
-                      {...register("shortDesc", {
-                        required: "Short description is required",
-                      })}
+                    <FieldLabel required>Description</FieldLabel>
+                    <Controller
+                      name="shortDesc"
+                      control={control}
+                      rules={{ required: "Description is required" }}
+                      render={({ field }) => (
+                        <RichTextField
+                          value={field.value || ""}
+                          onChange={field.onChange}
+                          minHeight="380px"
+                          placeholder="Detailed overview summarizing course content, expectations, modules and goals..."
+                        />
+                      )}
                     />
                     {errors.shortDesc && (
                       <FieldError>{errors.shortDesc.message}</FieldError>
                     )}
                   </div>
 
+                  {/* Full description hidden / commented out per requirement
                   <div className="sm:col-span-2">
-                    <FieldLabel required>Full Detailed Description</FieldLabel>
+                    <FieldLabel>Full Detailed Description</FieldLabel>
                     <Controller
                       name="fullDesc"
                       control={control}
-                      rules={{ required: "Full description is required" }}
                       render={({ field }) => (
                         <RichTextField
                           value={field.value || ""}
@@ -599,6 +604,7 @@ export default function CourseEditorPage({ courseId }: { courseId?: string }) {
                       <FieldError>{errors.fullDesc.message}</FieldError>
                     )}
                   </div>
+                  */}
                 </div>
               </div>
 
