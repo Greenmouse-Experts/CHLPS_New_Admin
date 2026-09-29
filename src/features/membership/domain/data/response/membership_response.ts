@@ -160,8 +160,11 @@ export interface MembershipSubscriber {
   answers?: MembershipApplicationAnswer[];
 }
 
+export type MembershipPlan = Membership;
+
 export interface MembershipTransaction {
   id: string;
+  userId?: string;
   orderId?: string;
   orderNumber?: string;
   membershipId: string;
