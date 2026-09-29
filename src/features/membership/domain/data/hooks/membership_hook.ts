@@ -202,7 +202,13 @@ export function useMembershipDetail(id: string) {
   const repo = useMemo(() => new MembershipRepository(), []);
   const [membership, setMembership] = useState<Membership | null>(null);
   const [subscribers, setSubscribers] = useState<MembershipSubscriber[]>([]);
+  const [subscribersCount, setSubscribersCount] = useState(0);
+  const [isSubsLoading, setIsSubsLoading] = useState(false);
+
   const [applications, setApplications] = useState<MembershipApplicationItem[]>([]);
+  const [applicationsCount, setApplicationsCount] = useState(0);
+  const [isAppsLoading, setIsAppsLoading] = useState(false);
+
   const [transactions, setTransactions] = useState<MembershipTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
@@ -229,13 +235,17 @@ export function useMembershipDetail(id: string) {
       }
       if (appsRes.success && appsRes.data) {
         setApplications(appsRes.data.items);
+        setApplicationsCount(appsRes.data.count);
       } else {
         setApplications([]);
+        setApplicationsCount(0);
       }
       if (subsRes.success && subsRes.data) {
         setSubscribers(subsRes.data.items);
+        setSubscribersCount(subsRes.data.count);
       } else {
         setSubscribers([]);
+        setSubscribersCount(0);
       }
       if (trxRes.success && trxRes.data) {
         setTransactions(trxRes.data.items);
@@ -417,10 +427,55 @@ export function useMembershipDetail(id: string) {
     [loadData, repo, toast],
   );
 
+  const fetchSubscribers = useCallback(
+    async (params?: { status?: string; search?: string; page?: number; pageSize?: number }) => {
+      if (!id) return;
+      setIsSubsLoading(true);
+      try {
+        const res = await repo.listSubscribers(id, params);
+        if (res.success && res.data) {
+          setSubscribers(res.data.items);
+          setSubscribersCount(res.data.count);
+        }
+      } finally {
+        setIsSubsLoading(false);
+      }
+    },
+    [id, repo],
+  );
+
+  const fetchApplications = useCallback(
+    async (params?: { status?: string; search?: string; page?: number; pageSize?: number }) => {
+      if (!id) return;
+      setIsAppsLoading(true);
+      try {
+        const res = await repo.listApplications({
+          membershipId: id,
+          status: params?.status,
+          search: params?.search,
+          page: params?.page ?? 1,
+          pageSize: params?.pageSize ?? 100,
+        });
+        if (res.success && res.data) {
+          setApplications(res.data.items);
+          setApplicationsCount(res.data.count);
+        }
+      } finally {
+        setIsAppsLoading(false);
+      }
+    },
+    [id, repo],
+  );
   return {
     membership,
     subscribers,
+    subscribersCount,
+    isSubsLoading,
+    fetchSubscribers,
     applications,
+    applicationsCount,
+    isAppsLoading,
+    fetchApplications,
     transactions,
     isLoading,
     isError,

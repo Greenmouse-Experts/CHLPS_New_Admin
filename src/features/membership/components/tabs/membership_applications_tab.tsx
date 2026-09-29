@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Divider, Modal } from "@/components/ui";
+import { Button, Divider, FilterBar, FilterOption, Modal } from "@/components/ui";
 import CustomTable, { columnType } from "@/components/tables/CustomTable";
 import { Actions } from "@/components/tables/pop-up";
 import {
@@ -10,7 +10,6 @@ import {
   CheckCircle,
   Eye,
   FileQuestion,
-  Search,
   XCircle,
 } from "lucide-react";
 import {
@@ -21,14 +20,20 @@ import { formatCurrency } from "@/utils/helper/format_num";
 
 export interface MembershipApplicationsTabProps {
   applications: MembershipApplicationItem[];
+  totalCount?: number;
+  isLoading?: boolean;
   applicationQuestions?: Array<{ id?: string; question: string }>;
+  onFilterChange?: (params: { status?: string; search?: string }) => void;
   onApprove: (item: any) => void;
   onDeny: (item: any) => void;
 }
 
 export function MembershipApplicationsTab({
   applications = [],
+  totalCount,
+  isLoading = false,
   applicationQuestions = [],
+  onFilterChange,
   onApprove,
   onDeny,
 }: MembershipApplicationsTabProps) {
@@ -39,15 +44,51 @@ export function MembershipApplicationsTab({
     null,
   );
 
-  const filteredApplications = useMemo(() => {
-    let result = applications;
+  const handleStatusChange = (newStatus: string) => {
+    setStatusFilter(newStatus);
+    onFilterChange?.({
+      status: newStatus !== "all" ? newStatus : undefined,
+      search: search.trim() || undefined,
+    });
+  };
 
+  const handleSearchChange = (newSearch: string) => {
+    setSearch(newSearch);
+    onFilterChange?.({
+      status: statusFilter !== "all" ? statusFilter : undefined,
+      search: newSearch.trim() || undefined,
+    });
+  };
+
+  // Client-side fallback / safety filtering if onFilterChange is not provided
+  const displayedApplications = useMemo(() => {
+    if (onFilterChange) {
+      if (!search.trim()) return applications;
+      const q = search.toLowerCase();
+      return applications.filter((app) => {
+        const student = app.student;
+        const fullName = `${student?.firstName ?? ""} ${student?.lastName ?? ""}`.toLowerCase();
+        const email = (student?.email ?? "").toLowerCase();
+        const phone = (student?.phone ?? "").toLowerCase();
+        const ref = (app.order?.reference ?? app.orderId ?? "").toLowerCase();
+        const status = (app.status ?? "").toLowerCase();
+
+        return (
+          fullName.includes(q) ||
+          email.includes(q) ||
+          phone.includes(q) ||
+          ref.includes(q) ||
+          status.includes(q)
+        );
+      });
+    }
+
+    let result = applications;
     if (statusFilter !== "all") {
       result = result.filter(
         (app) => String(app.status).toLowerCase() === statusFilter.toLowerCase(),
       );
     }
-
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter((app) => {
@@ -67,11 +108,10 @@ export function MembershipApplicationsTab({
         );
       });
     }
-
     return result;
-  }, [applications, statusFilter, search]);
+  }, [applications, onFilterChange, statusFilter, search]);
 
-  const stats = useMemo(() => {
+  const filterOptions: FilterOption[] = useMemo(() => {
     let pending = 0;
     let approved = 0;
     let rejected = 0;
@@ -83,13 +123,13 @@ export function MembershipApplicationsTab({
       else if (s === "rejected" || s === "cancelled") rejected++;
     });
 
-    return {
-      all: applications.length,
-      pending,
-      approved,
-      rejected,
-    };
-  }, [applications]);
+    return [
+      { value: "all", label: "All", count: totalCount ?? applications.length },
+      { value: "pending", label: "Pending", count: pending, badgeVariant: "warning" },
+      { value: "approved", label: "Approved", count: approved, badgeVariant: "success" },
+      { value: "rejected", label: "Denied", count: rejected, badgeVariant: "danger" },
+    ];
+  }, [applications, totalCount]);
 
   const columns: columnType<MembershipApplicationItem>[] = [
     {
@@ -299,77 +339,30 @@ export function MembershipApplicationsTab({
 
   return (
     <div className="bg-white rounded-xl border border-[#E7E9EB] p-4 shadow-sm space-y-4">
-      {/* Top Filter and Search Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        {/* Status Filters */}
-        <div className="flex items-center gap-1.5 p-1 bg-base-200/60 rounded-lg">
-          <button
-            type="button"
-            onClick={() => setStatusFilter("all")}
-            className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
-              statusFilter === "all"
-                ? "bg-white text-base-content shadow-xs"
-                : "text-base-content/60 hover:text-base-content"
-            }`}
-          >
-            All ({stats.all})
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter("pending")}
-            className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
-              statusFilter === "pending"
-                ? "bg-white text-amber-700 shadow-xs"
-                : "text-base-content/60 hover:text-base-content"
-            }`}
-          >
-            Pending ({stats.pending})
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter("approved")}
-            className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
-              statusFilter === "approved"
-                ? "bg-white text-emerald-700 shadow-xs"
-                : "text-base-content/60 hover:text-base-content"
-            }`}
-          >
-            Approved ({stats.approved})
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter("rejected")}
-            className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
-              statusFilter === "rejected"
-                ? "bg-white text-rose-700 shadow-xs"
-                : "text-base-content/60 hover:text-base-content"
-            }`}
-          >
-            Denied ({stats.rejected})
-          </button>
-        </div>
-
-        {/* Search Input */}
-        <div className="flex items-center gap-2 border border-[#E7E9EB] rounded-lg px-3 h-9 bg-white w-64 focus-within:border-primary transition-colors">
-          <Search size={15} className="text-secondary" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search applications..."
-            className="flex-1 text-xs outline-none focus:outline-none focus-visible:outline-none ring-0 bg-transparent placeholder-[#ADADAD]"
-          />
-        </div>
-      </div>
+      {/* Reusable Dynamic Filter Bar */}
+      <FilterBar
+        statusTabs={{
+          key: "status",
+          options: filterOptions,
+          selectedValue: statusFilter,
+          onChange: handleStatusChange,
+        }}
+        search={{
+          value: search,
+          placeholder: "Search applications...",
+          onChange: handleSearchChange,
+        }}
+        isLoading={isLoading}
+      />
 
       <Divider />
 
       <CustomTable
         ring={false}
         columns={columns}
-        data={filteredApplications}
+        data={displayedApplications}
         actions={actions}
-        totalCount={filteredApplications.length}
+        totalCount={displayedApplications.length}
         onRowClick={(row) => setReviewItem(row)}
       />
 

@@ -2,50 +2,60 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Divider, StatusBadge } from "@/components/ui";
+import { Divider, FilterBar, FilterOption, StatusBadge } from "@/components/ui";
 import CustomTable, { columnType } from "@/components/tables/CustomTable";
 import { Actions } from "@/components/tables/pop-up";
-import {
-  Ban,
-  Eye,
-  Search,
-} from "lucide-react";
-import {
-  MembershipSubscriber,
-} from "../../domain/data/response/membership_response";
+import { Ban, Eye } from "lucide-react";
+import { MembershipSubscriber } from "../../domain/data/response/membership_response";
 import { formatDate } from "@/utils/helper/formate_date";
 import { formatCurrency } from "@/utils/helper/format_num";
 
 export interface MembershipMembersTabProps {
   subscribers: MembershipSubscriber[];
+  totalCount?: number;
+  isLoading?: boolean;
+  onFilterChange?: (params: { status?: string; search?: string }) => void;
   onCancelSub?: (item: MembershipSubscriber) => void;
 }
 
 export function MembershipMembersTab({
   subscribers = [],
+  totalCount,
+  isLoading = false,
+  onFilterChange,
   onCancelSub,
 }: MembershipMembersTabProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const filteredMembers = useMemo(() => {
-    let result = subscribers;
+  const handleStatusChange = (newStatus: string) => {
+    setStatusFilter(newStatus);
+    onFilterChange?.({
+      status: newStatus !== "all" ? newStatus : undefined,
+      search: search.trim() || undefined,
+    });
+  };
 
-    if (statusFilter !== "all") {
-      result = result.filter(
-        (sub) => String(sub.status).toLowerCase() === statusFilter.toLowerCase(),
-      );
-    }
+  const handleSearchChange = (newSearch: string) => {
+    setSearch(newSearch);
+    onFilterChange?.({
+      status: statusFilter !== "all" ? statusFilter : undefined,
+      search: newSearch.trim() || undefined,
+    });
+  };
 
-    if (search.trim()) {
+  // Client-side fallback / safety filtering if onFilterChange is not provided
+  const displayedMembers = useMemo(() => {
+    if (onFilterChange) {
+      // If we delegate to parent/backend, we still do client-side search refinement
+      if (!search.trim()) return subscribers;
       const q = search.toLowerCase();
-      result = result.filter((sub) => {
+      return subscribers.filter((sub) => {
         const name = (sub.name || "").toLowerCase();
         const email = (sub.email || "").toLowerCase();
         const phone = (sub.phone || "").toLowerCase();
         const memberNum = (sub.memberNumber || "").toLowerCase();
-
         return (
           name.includes(q) ||
           email.includes(q) ||
@@ -55,10 +65,31 @@ export function MembershipMembersTab({
       });
     }
 
+    let result = subscribers;
+    if (statusFilter !== "all") {
+      result = result.filter(
+        (sub) => String(sub.status).toLowerCase() === statusFilter.toLowerCase(),
+      );
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter((sub) => {
+        const name = (sub.name || "").toLowerCase();
+        const email = (sub.email || "").toLowerCase();
+        const phone = (sub.phone || "").toLowerCase();
+        const memberNum = (sub.memberNumber || "").toLowerCase();
+        return (
+          name.includes(q) ||
+          email.includes(q) ||
+          phone.includes(q) ||
+          memberNum.includes(q)
+        );
+      });
+    }
     return result;
-  }, [subscribers, statusFilter, search]);
+  }, [subscribers, onFilterChange, statusFilter, search]);
 
-  const stats = useMemo(() => {
+  const filterOptions: FilterOption[] = useMemo(() => {
     let active = 0;
     let expired = 0;
     let cancelled = 0;
@@ -70,13 +101,13 @@ export function MembershipMembersTab({
       else if (s === "cancelled" || s === "rejected") cancelled++;
     });
 
-    return {
-      all: subscribers.length,
-      active,
-      expired,
-      cancelled,
-    };
-  }, [subscribers]);
+    return [
+      { value: "all", label: "All", count: totalCount ?? subscribers.length },
+      { value: "active", label: "Active", count: active, badgeVariant: "success" },
+      { value: "expired", label: "Expired", count: expired, badgeVariant: "warning" },
+      { value: "cancelled", label: "Cancelled", count: cancelled, badgeVariant: "danger" },
+    ];
+  }, [subscribers, totalCount]);
 
   const columns: columnType<MembershipSubscriber>[] = [
     {
@@ -187,77 +218,30 @@ export function MembershipMembersTab({
 
   return (
     <div className="bg-white rounded-xl border border-[#E7E9EB] p-4 shadow-sm space-y-4">
-      {/* Top Filter and Search Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        {/* Status Filters */}
-        <div className="flex items-center gap-1.5 p-1 bg-base-200/60 rounded-lg">
-          <button
-            type="button"
-            onClick={() => setStatusFilter("all")}
-            className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
-              statusFilter === "all"
-                ? "bg-white text-base-content shadow-xs"
-                : "text-base-content/60 hover:text-base-content"
-            }`}
-          >
-            All ({stats.all})
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter("active")}
-            className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
-              statusFilter === "active"
-                ? "bg-white text-emerald-700 shadow-xs"
-                : "text-base-content/60 hover:text-base-content"
-            }`}
-          >
-            Active ({stats.active})
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter("expired")}
-            className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
-              statusFilter === "expired"
-                ? "bg-white text-amber-700 shadow-xs"
-                : "text-base-content/60 hover:text-base-content"
-            }`}
-          >
-            Expired ({stats.expired})
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter("cancelled")}
-            className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
-              statusFilter === "cancelled"
-                ? "bg-white text-rose-700 shadow-xs"
-                : "text-base-content/60 hover:text-base-content"
-            }`}
-          >
-            Cancelled ({stats.cancelled})
-          </button>
-        </div>
-
-        {/* Search Input */}
-        <div className="flex items-center gap-2 border border-[#E7E9EB] rounded-lg px-3 h-9 bg-white w-64 focus-within:border-primary transition-colors">
-          <Search size={15} className="text-secondary" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search enrolled members..."
-            className="flex-1 text-xs outline-none focus:outline-none focus-visible:outline-none ring-0 bg-transparent placeholder-[#ADADAD]"
-          />
-        </div>
-      </div>
+      {/* Reusable Dynamic Filter Bar */}
+      <FilterBar
+        statusTabs={{
+          key: "status",
+          options: filterOptions,
+          selectedValue: statusFilter,
+          onChange: handleStatusChange,
+        }}
+        search={{
+          value: search,
+          placeholder: "Search enrolled members...",
+          onChange: handleSearchChange,
+        }}
+        isLoading={isLoading}
+      />
 
       <Divider />
 
       <CustomTable
         ring={false}
         columns={columns}
-        data={filteredMembers}
+        data={displayedMembers}
         actions={actions}
-        totalCount={filteredMembers.length}
+        totalCount={displayedMembers.length}
         onRowClick={(row) => router.push(`/students/${row.id}`)}
       />
     </div>

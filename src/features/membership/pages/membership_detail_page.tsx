@@ -45,7 +45,13 @@ export default function MembershipDetailPage({
   const {
     membership,
     subscribers,
+    subscribersCount,
+    isSubsLoading,
+    fetchSubscribers,
     applications,
+    applicationsCount,
+    isAppsLoading,
+    fetchApplications,
     transactions,
     isLoading,
     isError,
@@ -333,6 +339,9 @@ export default function MembershipDetailPage({
                 {activeTab === "members" && (
                   <MembershipMembersTab
                     subscribers={subscribers}
+                    totalCount={subscribersCount}
+                    isLoading={isSubsLoading}
+                    onFilterChange={fetchSubscribers}
                     onCancelSub={(item) => setCancelSubTarget(item)}
                   />
                 )}
@@ -340,7 +349,10 @@ export default function MembershipDetailPage({
                 {activeTab === "applications" && (
                   <MembershipApplicationsTab
                     applications={applications}
+                    totalCount={applicationsCount}
+                    isLoading={isAppsLoading}
                     applicationQuestions={currentPlan.applicationQuestions}
+                    onFilterChange={fetchApplications}
                     onApprove={(item) => setApproveModalItem(item)}
                     onDeny={(item) => {
                       setDenyReason("");

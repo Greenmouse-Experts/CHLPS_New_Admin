@@ -128,14 +128,20 @@ export class MembershipRepository {
   // --- Enrolled Members (Student Memberships) ---
   public async listSubscribers(
     membershipId: string,
-    params?: { page?: number; pageSize?: number; status?: string },
+    params?: { page?: number; pageSize?: number; status?: string; search?: string },
   ): Promise<MembershipSubscribersApiResponse> {
-    const res = await this._api.getData<unknown>(ApiUrls.studentMemberships, {
+    const queryParams: Record<string, unknown> = {
       membershipId,
       page: params?.page ?? 1,
       pageSize: params?.pageSize ?? 100,
-      ...(params?.status ? { status: params.status } : {}),
-    });
+    };
+    if (params?.status && params.status !== "all") {
+      queryParams.status = params.status;
+    }
+    if (params?.search?.trim()) {
+      queryParams.search = params.search.trim();
+    }
+    const res = await this._api.getData<unknown>(ApiUrls.studentMemberships, queryParams);
 
     if (res.success) {
       const rawList = unwrapList<any>(res.data);
@@ -265,16 +271,20 @@ export class MembershipRepository {
     pageSize?: number;
     status?: string;
     membershipId?: string;
+    search?: string;
   }): Promise<MembershipApplicationsApiResponse> {
     const queryParams: Record<string, unknown> = {
       page: params?.page ?? 1,
-      pageSize: params?.pageSize ?? 20,
+      pageSize: params?.pageSize ?? 100,
     };
     if (params?.status && params.status !== "all") {
       queryParams.status = params.status;
     }
     if (params?.membershipId) {
       queryParams.membershipId = params.membershipId;
+    }
+    if (params?.search?.trim()) {
+      queryParams.search = params.search.trim();
     }
 
     const [appsRes, ordersRes] = await Promise.all([

@@ -83,3 +83,11 @@ export type {
   MonthPickerValue,
   MonthPickerFormat,
 } from "./month_picker";
+
+export { FilterBar } from "./FilterBar";
+export type {
+  FilterBarProps,
+  FilterOption,
+  FilterTabConfig,
+  FilterDropdownConfig,
+} from "./FilterBar";
