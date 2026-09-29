@@ -202,6 +202,7 @@ export function useMembershipDetail(id: string) {
   const repo = useMemo(() => new MembershipRepository(), []);
   const [membership, setMembership] = useState<Membership | null>(null);
   const [subscribers, setSubscribers] = useState<MembershipSubscriber[]>([]);
+  const [applications, setApplications] = useState<MembershipApplicationItem[]>([]);
   const [transactions, setTransactions] = useState<MembershipTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
@@ -214,8 +215,9 @@ export function useMembershipDetail(id: string) {
     setIsError(false);
     setError(null);
     try {
-      const [res, subsRes, trxRes] = await Promise.all([
+      const [res, appsRes, subsRes, trxRes] = await Promise.all([
         repo.getOne(id),
+        repo.listApplications({ membershipId: id, page: 1, pageSize: 100 }),
         repo.listSubscribers(id),
         repo.listTransactions(id),
       ]);
@@ -225,8 +227,34 @@ export function useMembershipDetail(id: string) {
         setIsError(true);
         setError(res.message || "Membership not found");
       }
+      if (appsRes.success && appsRes.data) {
+        setApplications(appsRes.data.items);
+      } else {
+        setApplications([]);
+      }
       if (subsRes.success && subsRes.data) {
         setSubscribers(subsRes.data.items);
+      } else if (appsRes.success && appsRes.data) {
+        // Fallback to mapped subscribers from applications
+        const mappedSubs: MembershipSubscriber[] = appsRes.data.items.map((app) => ({
+          id: app.student?.id || app.id,
+          studentMembershipId: app.id,
+          applicationId: app.id,
+          applicationStatus: app.status,
+          membershipId: app.membership?.id || id,
+          memberNumber: app.student?.id ? app.student.id.slice(0, 8).toUpperCase() : `MEM-${app.id.slice(0, 6).toUpperCase()}`,
+          name: `${app.student?.firstName ?? ""} ${app.student?.lastName ?? ""}`.trim() || app.student?.email || "Unknown Member",
+          email: app.student?.email || "—",
+          phone: app.student?.phone || "—",
+          avatar: app.student?.picture,
+          joinedDate: app.createdDate || "",
+          expiryDate: app.status === "approved" ? (app.membership?.duration || "Active") : "—",
+          status: app.status === "approved" ? "active" : app.status === "rejected" ? "cancelled" : "pending",
+          amountPaid: Number(app.order?.amount ?? app.membership?.price ?? 0),
+          currency: app.order?.currency || app.membership?.currency || "CAD",
+          answers: app.answers || [],
+        }));
+        setSubscribers(mappedSubs);
       } else {
         setSubscribers([]);
       }
@@ -413,6 +441,7 @@ export function useMembershipDetail(id: string) {
   return {
     membership,
     subscribers,
+    applications,
     transactions,
     isLoading,
     isError,

@@ -44,6 +44,7 @@ export default function MembershipDetailPage({
   const {
     membership,
     subscribers,
+    applications,
     transactions,
     isLoading,
     isError,
@@ -63,12 +64,8 @@ export default function MembershipDetailPage({
   const [headerMenuIndex, setHeaderMenuIndex] = useState<number | null>(null);
 
   // Approval / Denial modal states
-  const [approveModalItem, setApproveModalItem] = useState<
-    MembershipTransaction | MembershipSubscriber | null
-  >(null);
-  const [denyModalItem, setDenyModalItem] = useState<
-    MembershipTransaction | MembershipSubscriber | null
-  >(null);
+  const [approveModalItem, setApproveModalItem] = useState<any>(null);
+  const [denyModalItem, setDenyModalItem] = useState<any>(null);
   const [denyReason, setDenyReason] = useState("");
   const [cancelOrderTarget, setCancelOrderTarget] =
     useState<MembershipTransaction | null>(null);
@@ -80,8 +77,9 @@ export default function MembershipDetailPage({
     if (!approveModalItem) return;
     setActionBusy(true);
     try {
-      if (approveModalItem.applicationId) {
-        await approveApplication(approveModalItem.applicationId);
+      const appId = approveModalItem.applicationId || approveModalItem.id;
+      if (appId) {
+        await approveApplication(appId);
       }
       setApproveModalItem(null);
     } finally {
@@ -93,8 +91,9 @@ export default function MembershipDetailPage({
     if (!denyModalItem || !denyReason.trim()) return;
     setActionBusy(true);
     try {
-      if (denyModalItem.applicationId) {
-        await rejectApplication(denyModalItem.applicationId, denyReason.trim());
+      const appId = denyModalItem.applicationId || denyModalItem.id;
+      if (appId) {
+        await rejectApplication(appId, denyReason.trim());
       }
       setDenyModalItem(null);
       setDenyReason("");
@@ -311,7 +310,7 @@ export default function MembershipDetailPage({
                     { key: "overview", label: "Overview & Features" },
                     {
                       key: "members",
-                      label: `Enrolled Members (${subscribers.length})`,
+                      label: `Enrolled Members (${applications.length || subscribers.length})`,
                     },
                     {
                       key: "transactions",
@@ -328,7 +327,9 @@ export default function MembershipDetailPage({
 
                 {activeTab === "members" && (
                   <MembershipMembersTab
+                    applications={applications}
                     subscribers={subscribers}
+                    applicationQuestions={currentPlan.applicationQuestions}
                     onApprove={(item) => setApproveModalItem(item)}
                     onDeny={(item) => {
                       setDenyReason("");
@@ -393,7 +394,9 @@ export default function MembershipDetailPage({
             <div className="flex justify-between items-center py-1 border-b border-base-200">
               <span className="text-xs text-base-content/60">Applicant</span>
               <span className="font-semibold text-base-content">
-                {"memberName" in (approveModalItem || {})
+                {approveModalItem?.student
+                  ? `${approveModalItem.student.firstName ?? ""} ${approveModalItem.student.lastName ?? ""}`.trim()
+                  : "memberName" in (approveModalItem || {})
                   ? (approveModalItem as MembershipTransaction).memberName
                   : (approveModalItem as MembershipSubscriber)?.name}
               </span>
@@ -401,9 +404,10 @@ export default function MembershipDetailPage({
             <div className="flex justify-between items-center py-1 border-b border-base-200">
               <span className="text-xs text-base-content/60">Email</span>
               <span className="text-xs text-base-content">
-                {"memberEmail" in (approveModalItem || {})
-                  ? (approveModalItem as MembershipTransaction).memberEmail
-                  : (approveModalItem as MembershipSubscriber)?.email}
+                {approveModalItem?.student?.email ||
+                  ("memberEmail" in (approveModalItem || {})
+                    ? (approveModalItem as MembershipTransaction).memberEmail
+                    : (approveModalItem as MembershipSubscriber)?.email)}
               </span>
             </div>
             {"reference" in (approveModalItem || {}) && (
@@ -499,7 +503,9 @@ export default function MembershipDetailPage({
             <div className="flex justify-between items-center py-1 border-b border-base-200">
               <span className="text-xs text-base-content/60">Applicant</span>
               <span className="font-semibold text-base-content">
-                {"memberName" in (denyModalItem || {})
+                {denyModalItem?.student
+                  ? `${denyModalItem.student.firstName ?? ""} ${denyModalItem.student.lastName ?? ""}`.trim()
+                  : "memberName" in (denyModalItem || {})
                   ? (denyModalItem as MembershipTransaction).memberName
                   : (denyModalItem as MembershipSubscriber)?.name}
               </span>
@@ -507,9 +513,10 @@ export default function MembershipDetailPage({
             <div className="flex justify-between items-center py-1">
               <span className="text-xs text-base-content/60">Email</span>
               <span className="text-xs text-base-content">
-                {"memberEmail" in (denyModalItem || {})
-                  ? (denyModalItem as MembershipTransaction).memberEmail
-                  : (denyModalItem as MembershipSubscriber)?.email}
+                {denyModalItem?.student?.email ||
+                  ("memberEmail" in (denyModalItem || {})
+                    ? (denyModalItem as MembershipTransaction).memberEmail
+                    : (denyModalItem as MembershipSubscriber)?.email)}
               </span>
             </div>
           </div>
