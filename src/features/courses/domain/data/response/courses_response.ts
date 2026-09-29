@@ -29,7 +29,7 @@ export interface CourseInstructor {
 
 export interface JobOpportunity {
   title: string;
-  description: string;
+  description?: string;
   iconUrl?: string | null;
 }
 

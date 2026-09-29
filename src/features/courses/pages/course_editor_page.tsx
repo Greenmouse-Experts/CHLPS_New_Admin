@@ -57,7 +57,7 @@ interface CourseFormValues {
   outcomes: { description: string; order: number }[];
   certificationBenefits: { value: string }[];
   entryRequirements: { value: string }[];
-  jobOpportunities: { title: string; description: string }[];
+  jobOpportunities: { title: string }[];
   applicationQuestions: { question: string }[];
 }
 
@@ -107,9 +107,8 @@ function getCourseFormDefaults(c?: Course | null): CourseFormValues {
       : [{ value: "" }],
 
     jobOpportunities: c?.jobOpportunities?.length
-      ? c.jobOpportunities.map((j) => ({
-          title: j.title || "",
-          description: j.description || "",
+      ? c.jobOpportunities.map((j: any) => ({
+          title: typeof j === "string" ? j : j.title || "",
         }))
       : [],
 
@@ -316,9 +315,8 @@ export default function CourseEditorPage({ courseId }: { courseId?: string }) {
     const jobOpportunities = (values.jobOpportunities || [])
       .map((j) => ({
         title: j.title.trim(),
-        description: j.description.trim(),
       }))
-      .filter((j) => j.title.length > 0 || j.description.length > 0);
+      .filter((j) => j.title.length > 0);
 
     const applicationQuestions = (values.applicationQuestions || [])
       .map((q) => ({
@@ -1000,50 +998,34 @@ export default function CourseEditorPage({ courseId }: { courseId?: string }) {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() => appendJobOpportunity({ title: "", description: "" })}
+                    onClick={() => appendJobOpportunity({ title: "" })}
                     leftIcon={<Plus size={14} />}
                   >
                     Add Opportunity
                   </Button>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {jobOpportunityFields.map((field, idx) => (
-                    <div
-                      key={field.id}
-                      className="p-4 rounded-xl border border-[#E7E9EB] bg-base-200/20 space-y-3"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-base-content/80 flex items-center gap-1.5">
-                          <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-bold">
-                            {idx + 1}
-                          </span>
-                          Opportunity #{idx + 1}
-                        </span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="xs"
-                          className="text-error hover:bg-error/10"
-                          onClick={() => removeJobOpportunity(idx)}
-                        >
-                          <Trash2 size={14} /> Remove
-                        </Button>
-                      </div>
-
-                      <div className="space-y-3">
+                    <div key={field.id} className="flex items-center gap-2">
+                      <span className="w-7 h-7 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-bold shrink-0">
+                        {idx + 1}
+                      </span>
+                      <div className="flex-1">
                         <SimpleInput
-                          label="Role Title"
                           placeholder="e.g. Loss Prevention Specialist"
                           {...register(`jobOpportunities.${idx}.title`)}
                         />
-                        <SimpleTextArea
-                          label="Description"
-                          placeholder="e.g. Work in retail, corporate security, or risk management."
-                          rows={2}
-                          {...register(`jobOpportunities.${idx}.description`)}
-                        />
                       </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-error hover:bg-error/10"
+                        onClick={() => removeJobOpportunity(idx)}
+                      >
+                        <Trash2 size={14} />
+                      </Button>
                     </div>
                   ))}
 
