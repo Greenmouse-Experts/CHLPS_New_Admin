@@ -32,6 +32,7 @@ import { formatCurrency } from "@/utils/helper/format_num";
 import {
   MembershipOverviewTab,
   MembershipMembersTab,
+  MembershipApplicationsTab,
   MembershipTransactionsTab,
 } from "../components/tabs";
 
@@ -310,7 +311,11 @@ export default function MembershipDetailPage({
                     { key: "overview", label: "Overview & Features" },
                     {
                       key: "members",
-                      label: `Enrolled Members (${applications.length || subscribers.length})`,
+                      label: `Enrolled Members (${subscribers.length})`,
+                    },
+                    {
+                      key: "applications",
+                      label: `Applications (${applications.length})`,
                     },
                     {
                       key: "transactions",
@@ -327,15 +332,20 @@ export default function MembershipDetailPage({
 
                 {activeTab === "members" && (
                   <MembershipMembersTab
-                    applications={applications}
                     subscribers={subscribers}
+                    onCancelSub={(item) => setCancelSubTarget(item)}
+                  />
+                )}
+
+                {activeTab === "applications" && (
+                  <MembershipApplicationsTab
+                    applications={applications}
                     applicationQuestions={currentPlan.applicationQuestions}
                     onApprove={(item) => setApproveModalItem(item)}
                     onDeny={(item) => {
                       setDenyReason("");
                       setDenyModalItem(item);
                     }}
-                    onCancelSub={(item) => setCancelSubTarget(item)}
                   />
                 )}
 

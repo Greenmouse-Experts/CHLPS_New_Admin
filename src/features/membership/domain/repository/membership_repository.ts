@@ -125,12 +125,12 @@ export class MembershipRepository {
     };
   }
 
-  // --- Enrolled Members (Subscribers / Applications) ---
+  // --- Enrolled Members (Student Memberships) ---
   public async listSubscribers(
     membershipId: string,
     params?: { page?: number; pageSize?: number; status?: string },
   ): Promise<MembershipSubscribersApiResponse> {
-    const res = await this._api.getData<unknown>(ApiUrls.membershipApplications, {
+    const res = await this._api.getData<unknown>(ApiUrls.studentMemberships, {
       membershipId,
       page: params?.page ?? 1,
       pageSize: params?.pageSize ?? 100,
@@ -150,17 +150,14 @@ export class MembershipRepository {
           ? student.id.slice(0, 8).toUpperCase()
           : `MEM-${(item.id ?? "").slice(0, 6).toUpperCase()}`;
 
-        const isApproved = item.status === "approved" || item.status === "active";
-        const isRejected = item.status === "rejected" || item.status === "cancelled";
-
         return {
           id: student.id || item.id,
           studentMembershipId: item.id,
-          applicationId: item.id,
+          applicationId: item.applicationId,
           applicationStatus:
-            isApproved
+            item.status === "active"
               ? "approved"
-              : isRejected
+              : item.status === "cancelled"
               ? "rejected"
               : "pending",
           membershipId: mem.id || membershipId,
@@ -169,12 +166,11 @@ export class MembershipRepository {
           email: student.email || "—",
           phone: student.phone || "—",
           avatar: student.picture || undefined,
-          joinedDate: item.createdDate || item.startDate || "",
-          expiryDate: isApproved ? (mem.duration || "Active") : "—",
-          status: isApproved ? "active" : isRejected ? "cancelled" : "pending",
-          amountPaid: Number(item.order?.amount ?? mem.price ?? 0),
-          currency: item.order?.currency || mem.currency || "CAD",
-          answers: item.answers || [],
+          joinedDate: item.startDate || item.createdDate || "",
+          expiryDate: item.endDate || "",
+          status: item.status || "active",
+          amountPaid: Number(mem.price) || 0,
+          currency: mem.currency || "CAD",
         };
       });
 
