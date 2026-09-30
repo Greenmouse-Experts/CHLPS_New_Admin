@@ -1,7 +1,13 @@
 import { ApiResponse } from "@/lib/network/entity/api_response";
 import { Person } from "@/features/admins/domain/data/response/admin_response";
 
-export type Student = Person;
+export interface Student extends Person {
+  placeOfWork?: string | null;
+  officialDesignation?: string | null;
+  currentEducationOrProfessionalQualification?: string | null;
+  country?: string | null;
+  stateProvince?: string | null;
+}
 
 export interface StudentOrderItem {
   id: string;

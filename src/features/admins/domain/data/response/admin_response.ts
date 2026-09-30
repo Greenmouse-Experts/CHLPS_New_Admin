@@ -12,6 +12,11 @@ export interface Person {
   isSuspended?: boolean;
   role?: string;
   address?: string | null;
+  placeOfWork?: string | null;
+  officialDesignation?: string | null;
+  currentEducationOrProfessionalQualification?: string | null;
+  country?: string | null;
+  stateProvince?: string | null;
   linkedinUrl?: string | null;
   facebookUrl?: string | null;
   twitterUrl?: string | null;
