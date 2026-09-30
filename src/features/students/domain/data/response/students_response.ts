@@ -9,18 +9,47 @@ export interface Student extends Person {
   stateProvince?: string | null;
 }
 
+export interface StudentCourseItem {
+  id: string;
+  title?: string;
+  slug?: string;
+  shortDesc?: string;
+  fullDesc?: string;
+  price?: number;
+  discount?: number;
+  isPublished?: boolean;
+  featured?: boolean;
+  coverImage?: string | null;
+  banner?: string | null;
+  bannerText?: string | null;
+  totalContent?: number;
+  completedContent?: number;
+  assessment?: {
+    total?: number;
+    done?: number;
+  };
+}
+
+export interface StudentOrderDetails {
+  id: string;
+  number?: string;
+  status?: string;
+  createdDate?: string;
+}
+
 export interface StudentOrderItem {
   id: string;
   price?: number;
-  course?: {
-    id?: string;
-    title?: string;
-    coverImage?: string;
-  };
+  course?: StudentCourseItem;
 }
 
 export interface StudentOrder {
   id: string;
+  documents?: any;
+  price?: number;
+  course?: StudentCourseItem;
+  order?: StudentOrderDetails;
+  // Legacy / fallback fields
   number?: string;
   status?: string;
   createdDate?: string;
@@ -29,6 +58,7 @@ export interface StudentOrder {
     amount?: number;
     reference?: string;
     status?: string;
+    currency?: string;
   };
 }
 

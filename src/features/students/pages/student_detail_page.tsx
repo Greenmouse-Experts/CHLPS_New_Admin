@@ -102,62 +102,116 @@ export default function StudentDetailPage({ studentId }: { studentId: string }) 
   // Orders Table Columns
   const orderColumns: columnType<StudentOrder>[] = [
     {
-      key: "number",
-      label: "Order Reference",
-      render: (v, row) => (
-        <span className="font-mono text-xs font-semibold text-primary bg-primary/5 px-2.5 py-1 rounded">
-          {v || row.trx?.reference || row.id?.slice(0, 8).toUpperCase() || "—"}
-        </span>
-      ),
-    },
-    {
-      key: "items",
-      label: "Items / Courses",
+      key: "course",
+      label: "Course / Item",
       render: (_, row) => {
-        const titles = row.orderItems
-          ?.map((it) => it.course?.title)
-          .filter(Boolean);
-        if (!titles || titles.length === 0) {
-          return <span className="text-xs text-base-content/60">Standard Enrollment</span>;
-        }
+        const course = row.course || row.orderItems?.[0]?.course;
+        const title =
+          course?.title ||
+          row.orderItems?.map((it) => it.course?.title).filter(Boolean).join(", ") ||
+          "Enrolled Course";
+        const coverImage = course?.coverImage;
+
         return (
-          <div className="space-y-0.5">
-            {titles.map((t, idx) => (
-              <p key={idx} className="text-xs font-medium text-base-content leading-tight">
-                {t}
+          <div className="flex items-center gap-3 min-w-[240px]">
+            {coverImage ? (
+              <img
+                src={coverImage}
+                alt=""
+                className="w-10 h-10 rounded-lg object-cover border border-[#E7E9EB] shrink-0"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 font-bold text-xs">
+                {(title[0] || "C").toUpperCase()}
+              </div>
+            )}
+            <div className="min-w-0">
+              <p
+                onClick={() => {
+                  if (course?.id) router.push(`/courses/${course.id}`);
+                }}
+                className={`text-sm font-semibold text-base-content leading-tight line-clamp-1 ${
+                  course?.id ? "hover:text-primary cursor-pointer transition-colors" : ""
+                }`}
+                title={title}
+              >
+                {title}
               </p>
-            ))}
+              {course?.totalContent !== undefined && course.totalContent > 0 && (
+                <p className="text-[11px] text-base-content/60 mt-0.5">
+                  {course.completedContent ?? 0} of {course.totalContent} modules completed
+                </p>
+              )}
+            </div>
           </div>
         );
       },
     },
     {
-      key: "trx",
-      label: "Amount Paid",
-      render: (_, row) => (
-        <span className="text-sm font-semibold text-base-content whitespace-nowrap">
-          {formatCurrency(row.trx?.amount ?? 0, {
-            currency: (row.trx as any)?.currency || "CAD",
-          })}
-        </span>
-      ),
+      key: "number",
+      label: "Order Reference",
+      render: (v, row) => {
+        const orderNum =
+          row.order?.number ||
+          v ||
+          row.trx?.reference ||
+          (row.id ? row.id.slice(0, 8).toUpperCase() : "—");
+        return (
+          <span
+            className="font-mono text-xs font-semibold text-primary bg-primary/5 px-2.5 py-1 rounded max-w-[180px] truncate block"
+            title={orderNum}
+          >
+            {orderNum}
+          </span>
+        );
+      },
+    },
+    {
+      key: "price",
+      label: "Price / Amount",
+      render: (v, row) => {
+        const amt =
+          v !== undefined
+            ? Number(v)
+            : row.price !== undefined
+            ? Number(row.price)
+            : row.course?.price !== undefined
+            ? Number(row.course.price)
+            : row.trx?.amount !== undefined
+            ? Number(row.trx.amount)
+            : 0;
+        return (
+          <span className="text-sm font-semibold text-base-content whitespace-nowrap">
+            {formatCurrency(amt, {
+              currency: (row.trx as any)?.currency || "CAD",
+            })}
+          </span>
+        );
+      },
     },
     {
       key: "status",
-      label: "Status",
+      label: "Order Status",
       render: (v, row) => {
-        const status = v || (row.trx?.status === "success" ? "confirmed" : "pending");
-        return <StatusBadge status={status} />;
+        const st =
+          row.order?.status ||
+          v ||
+          row.status ||
+          (row.trx?.status === "success" ? "confirmed" : "pending");
+        return <StatusBadge status={st} />;
       },
     },
     {
       key: "createdDate",
-      label: "Date",
-      render: (v) => (
-        <span className="text-sm text-base-content/70 whitespace-nowrap">
-          {v ? formatDate(v, "DD MMM YYYY") : "—"}
-        </span>
-      ),
+      label: "Purchase Date",
+      render: (v, row) => {
+        const dt = row.order?.createdDate || v || row.createdDate;
+        return (
+          <span className="text-sm text-base-content/70 whitespace-nowrap">
+            {dt ? formatDate(dt, "DD MMM YYYY") : "—"}
+          </span>
+        );
+      },
     },
   ];
 
