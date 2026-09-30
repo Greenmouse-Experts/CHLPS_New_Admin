@@ -20,6 +20,40 @@ class CertificatesRepository {
     return fail(res.message || "Failed to fetch certificates");
   }
 
+  public async getStudentMembershipCertificate(
+    studentId: string,
+    membershipId: string,
+  ) {
+    const res = await this._api.getData<Certificate>(
+      ApiUrls.studentMembershipCertificate(studentId, membershipId),
+    );
+    if (res.success && res.data) return ok(res.data as Certificate);
+    return fail(res.message || "Failed to fetch student membership certificate");
+  }
+
+  public async getMembershipCertificatesAll(
+    membershipId: string,
+    params?: { page?: number; pageSize?: number },
+  ): Promise<CertificatesApiResponse> {
+    const query = new URLSearchParams();
+    if (params?.page) query.set("page", String(params.page));
+    if (params?.pageSize) query.set("pageSize", String(params.pageSize));
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    const res = await this._api.getData<unknown>(
+      `${ApiUrls.allMembershipCertificates(membershipId)}${qs}`,
+    );
+    if (res.success) return ok(unwrapList<Certificate>(res.data));
+    return fail(res.message || "Failed to fetch membership certificates");
+  }
+
+  public async getStudentCertificates(studentId: string): Promise<CertificatesApiResponse> {
+    const res = await this._api.getData<unknown>(
+      ApiUrls.studentCertificates(studentId),
+    );
+    if (res.success) return ok(unwrapList<Certificate>(res.data));
+    return fail(res.message || "Failed to fetch student certificates");
+  }
+
   public async stats(): Promise<CertStatsApiResponse> {
     const res = await this._api.getData<CertStats>(ApiUrls.certificateStats);
     if (res.success && res.data) return ok(res.data as CertStats);

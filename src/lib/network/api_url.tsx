@@ -275,6 +275,15 @@ export class ApiUrls {
   static studentCertificates(studentId: string) {
     return `/certificates/student/${studentId}`;
   }
+  static membershipCertificates(membershipId: string) {
+    return `/certificates/membership/${membershipId}`;
+  }
+  static studentMembershipCertificate(studentId: string, membershipId: string) {
+    return `/certificates/student/${studentId}/membership/${membershipId}`;
+  }
+  static allMembershipCertificates(membershipId: string) {
+    return `/certificates/membership/${membershipId}/all`;
+  }
   static certificateById(id: string) {
     return `/certificates/${id}`;
   }

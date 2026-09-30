@@ -64,11 +64,14 @@ export interface StudentOrder {
 
 export interface StudentCertificate {
   id: string;
+  sourceType?: string;
   certificateNumber?: string;
   certificateUrl?: string;
   issuedAt?: string;
   isRevoked?: boolean;
-  course?: { title?: string };
+  revokedAt?: string | null;
+  course?: { id?: string; title?: string };
+  membership?: { id?: string; name?: string; slug?: string };
 }
 
 export type StudentsApiResponse = ApiResponse<Student[]>;

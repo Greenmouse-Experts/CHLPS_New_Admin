@@ -143,6 +143,7 @@ export interface MembershipApplicationItem {
 
 export interface MembershipSubscriber {
   id: string;
+  studentId?: string;
   studentMembershipId?: string;
   applicationId?: string;
   applicationStatus?: "pending" | "approved" | "rejected" | string;

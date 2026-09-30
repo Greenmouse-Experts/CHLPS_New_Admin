@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DashboardLayout } from "@/components";
 import { Button, Divider, StatusBadge, Tabs, useToast } from "@/components/ui";
+import DialogModal, { ModalHandle } from "@/components/DialogModal";
 import CustomTable, { columnType } from "@/components/tables/CustomTable";
 import { Actions } from "@/components/tables/pop-up";
 import PageLoader from "@/components/PageLoader";
@@ -42,6 +43,8 @@ export default function StudentDetailPage({ studentId }: { studentId: string }) 
   const [student, setStudent] = useState<Student | null>(null);
   const [orders, setOrders] = useState<StudentOrder[]>([]);
   const [certs, setCerts] = useState<StudentCertificate[]>([]);
+  const [previewCert, setPreviewCert] = useState<StudentCertificate | null>(null);
+  const certModalRef = useRef<ModalHandle>(null);
   const [loading, setLoading] = useState(true);
   const [isError, setIsError] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -215,6 +218,24 @@ export default function StudentDetailPage({ studentId }: { studentId: string }) 
     },
   ];
 
+  const handleViewCert = async (cert: StudentCertificate) => {
+    try {
+      if (studentId && cert.membership?.id) {
+        const res = await repo.getStudentMembershipCertificate(studentId, cert.membership.id);
+        if (res.success && res.data) {
+          setPreviewCert(res.data);
+          certModalRef.current?.open();
+          return;
+        }
+      }
+      setPreviewCert(cert);
+      certModalRef.current?.open();
+    } catch {
+      setPreviewCert(cert);
+      certModalRef.current?.open();
+    }
+  };
+
   // Certificate Table Columns
   const certColumns: columnType<StudentCertificate>[] = [
     {
@@ -228,10 +249,10 @@ export default function StudentDetailPage({ studentId }: { studentId: string }) 
     },
     {
       key: "course",
-      label: "Program / Course",
+      label: "Program / Source",
       render: (_, row) => (
         <span className="text-sm font-medium text-base-content">
-          {row.course?.title || "Professional Certification"}
+          {row.membership?.name || row.course?.title || "Professional Certification"}
         </span>
       ),
     },
@@ -252,20 +273,16 @@ export default function StudentDetailPage({ studentId }: { studentId: string }) 
     {
       key: "actions",
       label: "Action",
-      render: (_, row) =>
-        row.certificateUrl ? (
-          <a
-            href={row.certificateUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
-          >
-            <ExternalLink size={13} />
-            View Certificate
-          </a>
-        ) : (
-          <span className="text-xs text-base-content/40">—</span>
-        ),
+      render: (_, row) => (
+        <button
+          type="button"
+          onClick={() => handleViewCert(row)}
+          className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline cursor-pointer"
+        >
+          <ExternalLink size={13} />
+          View Certificate
+        </button>
+      ),
     },
   ];
 
@@ -579,6 +596,87 @@ export default function StudentDetailPage({ studentId }: { studentId: string }) 
             </div>
           )}
         </PageLoader>
+
+        {/* DialogModal Certificate Viewer */}
+        <DialogModal
+          ref={certModalRef}
+          title={
+            previewCert
+              ? `Certificate: ${previewCert.certificateNumber || "Preview"}`
+              : "Certificate Preview"
+          }
+          onClose={() => setPreviewCert(null)}
+          actions={
+            <div className="flex items-center gap-2">
+              {previewCert?.certificateUrl && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() =>
+                    previewCert.certificateUrl &&
+                    window.open(previewCert.certificateUrl, "_blank")
+                  }
+                  className="inline-flex items-center gap-1.5"
+                >
+                  <ExternalLink size={14} />
+                  Open in New Tab
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => certModalRef.current?.close()}
+              >
+                Close
+              </Button>
+            </div>
+          }
+        >
+          {previewCert && (
+            <div className="space-y-4">
+              <div className="bg-base-200/50 rounded-xl p-4 border border-base-300 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div>
+                  <span className="text-base-content/60 block font-medium">Certificate ID:</span>
+                  <span className="font-mono font-bold text-primary block mt-0.5">
+                    {previewCert.certificateNumber || "—"}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-base-content/60 block font-medium">Recipient:</span>
+                  <span className="font-semibold text-base-content block mt-0.5">{fullName}</span>
+                </div>
+                <div>
+                  <span className="text-base-content/60 block font-medium">Program:</span>
+                  <span className="font-semibold text-base-content block mt-0.5">
+                    {previewCert.membership?.name ||
+                      previewCert.course?.title ||
+                      "Professional Certification"}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-base-content/60 block font-medium">Status:</span>
+                  <div className="mt-0.5">
+                    <StatusBadge status={previewCert.isRevoked ? "revoked" : "active"} />
+                  </div>
+                </div>
+              </div>
+
+              {previewCert.certificateUrl ? (
+                <div className="rounded-xl overflow-hidden border border-base-300 bg-black/5">
+                  <iframe
+                    src={`${previewCert.certificateUrl}#toolbar=0`}
+                    className="w-full h-[480px] border-0"
+                    title="Certificate Document"
+                  />
+                </div>
+              ) : (
+                <div className="py-12 text-center text-sm text-base-content/50">
+                  No certificate document URL found.
+                </div>
+              )}
+            </div>
+          )}
+        </DialogModal>
       </div>
     </DashboardLayout>
   );

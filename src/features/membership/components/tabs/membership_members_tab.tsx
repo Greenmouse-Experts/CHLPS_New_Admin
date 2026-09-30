@@ -1,16 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Divider, FilterBar, FilterOption, StatusBadge } from "@/components/ui";
+import { Button, Divider, FilterBar, FilterOption, StatusBadge, useToast } from "@/components/ui";
+import DialogModal, { ModalHandle } from "@/components/DialogModal";
 import CustomTable, { columnType } from "@/components/tables/CustomTable";
 import { Actions } from "@/components/tables/pop-up";
-import { Ban, Eye } from "lucide-react";
+import { Award, Ban, ExternalLink, Eye, Mail, Phone, User } from "lucide-react";
 import { MembershipSubscriber } from "../../domain/data/response/membership_response";
+import { Certificate } from "@/features/certificates/domain/data/response/certificates_response";
+import CertificatesRepository from "@/features/certificates/domain/repository/certificates_repository";
 import { formatDate } from "@/utils/helper/formate_date";
 import { formatCurrency } from "@/utils/helper/format_num";
 
 export interface MembershipMembersTabProps {
+  membershipId?: string;
   subscribers: MembershipSubscriber[];
   totalCount?: number;
   isLoading?: boolean;
@@ -19,6 +23,7 @@ export interface MembershipMembersTabProps {
 }
 
 export function MembershipMembersTab({
+  membershipId,
   subscribers = [],
   totalCount,
   isLoading = false,
@@ -26,8 +31,14 @@ export function MembershipMembersTab({
   onCancelSub,
 }: MembershipMembersTabProps) {
   const router = useRouter();
+  const { toast } = useToast();
+  const certRepo = useMemo(() => new CertificatesRepository(), []);
+  const certModalRef = useRef<ModalHandle>(null);
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [selectedCert, setSelectedCert] = useState<Certificate | null>(null);
+  const [certLoading, setCertLoading] = useState(false);
 
   const handleStatusChange = (newStatus: string) => {
     setStatusFilter(newStatus);
@@ -45,10 +56,36 @@ export function MembershipMembersTab({
     });
   };
 
-  // Client-side fallback / safety filtering if onFilterChange is not provided
+  const handleFetchCertificate = async (member: MembershipSubscriber) => {
+    const studentId = member.studentId || member.id;
+    if (!studentId) {
+      toast("Member identifier not found", "danger");
+      return;
+    }
+    if (!membershipId) {
+      toast("Membership identifier missing", "danger");
+      return;
+    }
+
+    try {
+      setCertLoading(true);
+      const res = await certRepo.getStudentMembershipCertificate(studentId, membershipId);
+      if (res.success && res.data) {
+        setSelectedCert(res.data);
+        certModalRef.current?.open();
+      } else {
+        toast(res.message || "No certificate issued for this member yet", "info");
+      }
+    } catch (err: any) {
+      toast(err?.message || "Failed to fetch certificate", "danger");
+    } finally {
+      setCertLoading(false);
+    }
+  };
+
+  // Client-side safety filtering if backend pagination isn't active
   const displayedMembers = useMemo(() => {
     if (onFilterChange) {
-      // If we delegate to parent/backend, we still do client-side search refinement
       if (!search.trim()) return subscribers;
       const q = search.toLowerCase();
       return subscribers.filter((sub) => {
@@ -188,6 +225,17 @@ export function MembershipMembersTab({
 
   const actions: Actions<MembershipSubscriber>[] = [
     {
+      key: "view_certificate",
+      label: "View Certificate",
+      render: () => (
+        <span className="flex items-center gap-2 text-primary font-medium">
+          <Award size={15} />
+          View Certificate
+        </span>
+      ),
+      action: (row) => handleFetchCertificate(row),
+    },
+    {
       key: "view_member",
       label: "View Member Details",
       render: () => (
@@ -228,22 +276,102 @@ export function MembershipMembersTab({
         }}
         search={{
           value: search,
-          placeholder: "Search enrolled members...",
+          placeholder: "Search members by name, email, phone, ID...",
           onChange: handleSearchChange,
         }}
         isLoading={isLoading}
       />
-
-      <Divider />
 
       <CustomTable
         ring={false}
         columns={columns}
         data={displayedMembers}
         actions={actions}
-        totalCount={displayedMembers.length}
-        onRowClick={(row) => router.push(`/students/${row.id}`)}
+        totalCount={totalCount ?? displayedMembers.length}
       />
+
+      {/* Certificate Viewer Modal */}
+      <DialogModal
+        ref={certModalRef}
+        title={
+          selectedCert
+            ? `Membership Certificate: ${selectedCert.certificateNumber || "Preview"}`
+            : "Membership Certificate"
+        }
+        onClose={() => setSelectedCert(null)}
+        actions={
+          <div className="flex items-center gap-2">
+            {selectedCert?.certificateUrl && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() =>
+                  selectedCert.certificateUrl &&
+                  window.open(selectedCert.certificateUrl, "_blank")
+                }
+                className="inline-flex items-center gap-1.5"
+              >
+                <ExternalLink size={14} />
+                Open in New Tab
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => certModalRef.current?.close()}
+            >
+              Close
+            </Button>
+          </div>
+        }
+      >
+        {selectedCert && (
+          <div className="space-y-4">
+            <div className="bg-base-200/50 rounded-xl p-4 border border-base-300 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div>
+                <span className="text-base-content/60 block font-medium">Certificate No:</span>
+                <span className="font-mono font-bold text-primary block mt-0.5">
+                  {selectedCert.certificateNumber || "—"}
+                </span>
+              </div>
+              <div>
+                <span className="text-base-content/60 block font-medium">Member Name:</span>
+                <span className="font-semibold text-base-content block mt-0.5">
+                  {selectedCert.student
+                    ? `${selectedCert.student.firstName ?? ""} ${selectedCert.student.lastName ?? ""}`.trim()
+                    : "—"}
+                </span>
+              </div>
+              <div>
+                <span className="text-base-content/60 block font-medium">Membership:</span>
+                <span className="font-semibold text-base-content block mt-0.5">
+                  {selectedCert.membership?.name || "Membership Certificate"}
+                </span>
+              </div>
+              <div>
+                <span className="text-base-content/60 block font-medium">Status:</span>
+                <div className="mt-0.5">
+                  <StatusBadge status={selectedCert.isRevoked ? "revoked" : "active"} />
+                </div>
+              </div>
+            </div>
+
+            {selectedCert.certificateUrl ? (
+              <div className="rounded-xl overflow-hidden border border-base-300 bg-black/5">
+                <iframe
+                  src={`${selectedCert.certificateUrl}#toolbar=0`}
+                  className="w-full h-[480px] border-0"
+                  title="Certificate Document"
+                />
+              </div>
+            ) : (
+              <div className="py-12 text-center text-sm text-base-content/50">
+                No certificate document URL found.
+              </div>
+            )}
+          </div>
+        )}
+      </DialogModal>
     </div>
   );
 }

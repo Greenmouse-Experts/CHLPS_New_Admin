@@ -338,6 +338,7 @@ export default function MembershipDetailPage({
 
                 {activeTab === "members" && (
                   <MembershipMembersTab
+                    membershipId={membershipId}
                     subscribers={subscribers}
                     totalCount={subscribersCount}
                     isLoading={isSubsLoading}

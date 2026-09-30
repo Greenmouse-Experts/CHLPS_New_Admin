@@ -45,6 +45,17 @@ class StudentsRepository {
     if (res.success) return ok(unwrapList<StudentCertificate>(res.data));
     return fail(res.message || "Failed to fetch certificates");
   }
+
+  public async getStudentMembershipCertificate(
+    studentId: string,
+    membershipId: string,
+  ) {
+    const res = await this._api.getData<StudentCertificate>(
+      ApiUrls.studentMembershipCertificate(studentId, membershipId),
+    );
+    if (res.success && res.data) return ok(res.data as StudentCertificate);
+    return fail(res.message || "Failed to fetch certificate");
+  }
 }
 
 export default StudentsRepository;
