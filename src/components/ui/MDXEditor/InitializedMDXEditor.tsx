@@ -1,6 +1,6 @@
 "use client";
 
-import type { ForwardedRef } from "react";
+import type { ForwardedRef, Ref } from "react";
 import {
   MDXEditor,
   type MDXEditorMethods,
@@ -26,7 +26,7 @@ import {
 } from "@mdxeditor/editor";
 
 export interface InitializedMDXEditorProps extends MDXEditorProps {
-  editorRef?: ForwardedRef<MDXEditorMethods> | null;
+  editorRef?: Ref<MDXEditorMethods> | null;
 }
 
 export default function InitializedMDXEditor({

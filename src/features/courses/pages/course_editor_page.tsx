@@ -71,10 +71,15 @@ const TABS = [
 type TabKey = (typeof TABS)[number]["key"];
 
 function getCourseFormDefaults(c?: Course | null): CourseFormValues {
+  const resolvedDesc =
+    c?.shortDesc && c.shortDesc.trim().length > 0
+      ? c.shortDesc
+      : c?.fullDesc ?? "";
+
   return {
     title: c?.title ?? "",
-    shortDesc: c?.shortDesc ?? "",
-    fullDesc: c?.fullDesc ?? "",
+    shortDesc: resolvedDesc,
+    fullDesc: c?.fullDesc || resolvedDesc,
     price: c?.price !== undefined ? String(c.price) : "",
     discount: c?.discount !== undefined ? String(c.discount) : "0",
     program: c?.program?.id ?? "",
