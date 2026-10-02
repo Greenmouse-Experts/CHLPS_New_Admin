@@ -59,7 +59,10 @@ class ApiService {
           try {
             const { getDB } = await import("../storage/user_db");
             const db = await getDB();
-            await db.transaction("users", "readwrite").objectStore("users").clear();
+            await db
+              .transaction("users", "readwrite")
+              .objectStore("users")
+              .clear();
           } catch {
             /* ignore */
           }

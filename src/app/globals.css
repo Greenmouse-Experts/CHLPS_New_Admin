@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@mdxeditor/editor/style.css";
+@plugin "@tailwindcss/typography";
 @plugin "daisyui" {
     themes: flipex --default;
 }

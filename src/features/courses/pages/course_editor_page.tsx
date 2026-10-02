@@ -74,7 +74,7 @@ function getCourseFormDefaults(c?: Course | null): CourseFormValues {
   const resolvedDesc =
     c?.shortDesc && c.shortDesc.trim().length > 0
       ? c.shortDesc
-      : c?.fullDesc ?? "";
+      : (c?.fullDesc ?? "");
 
   return {
     title: c?.title ?? "",
@@ -995,7 +995,8 @@ export default function CourseEditorPage({ courseId }: { courseId?: string }) {
                         Job & Career Opportunities
                       </h2>
                       <p className="text-xs text-base-content/60">
-                        Potential career paths and roles graduates can pursue upon completing this course.
+                        Potential career paths and roles graduates can pursue
+                        upon completing this course.
                       </p>
                     </div>
                   </div>
@@ -1036,7 +1037,8 @@ export default function CourseEditorPage({ courseId }: { courseId?: string }) {
 
                   {jobOpportunityFields.length === 0 && (
                     <p className="text-xs text-secondary italic py-3 text-center bg-base-200/20 rounded-lg">
-                      No job opportunities added. Click &quot;Add Opportunity&quot; to outline target career roles.
+                      No job opportunities added. Click &quot;Add
+                      Opportunity&quot; to outline target career roles.
                     </p>
                   )}
                 </div>

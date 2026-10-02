@@ -1,32 +1,15 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import dynamic from "next/dynamic";
 import type { MDXEditorMethods } from "@mdxeditor/editor";
 import { cn } from "@/lib/tokens";
-import TurndownService from "turndown";
-
-const turndownService = new TurndownService({
-  headingStyle: "atx",
-  hr: "---",
-  bulletListMarker: "-",
-  codeBlockStyle: "fenced",
-});
-
-function toMarkdown(content?: string | null): string {
-  if (!content) return "";
-  const trimmed = content.trim();
-  if (!trimmed) return "";
-  // Check if content contains HTML tags
-  if (/<[a-z][\s\S]*>/i.test(trimmed)) {
-    try {
-      return turndownService.turndown(trimmed);
-    } catch {
-      return trimmed;
-    }
-  }
-  return trimmed;
-}
 
 const InitializedMDXEditor = dynamic(() => import("./InitializedMDXEditor"), {
   ssr: false,
@@ -46,6 +29,43 @@ const InitializedMDXEditor = dynamic(() => import("./InitializedMDXEditor"), {
     </div>
   ),
 });
+
+const INLINE_TAGS = "b|strong|i|em|u|s|strike|del|sup|sub|code|span|a";
+
+/**
+ * MDXEditor parses its input as MDX, where inline HTML whose opening tag is
+ * followed by a line break (e.g. `<b>\ntext</b>`) is invalid and makes the
+ * import throw — leaving the editor blank. Joining such tags with their content
+ * keeps the HTML intact (so bold/underline/sup/sub still render) while making
+ * the markdown valid.
+ */
+function toEditorMarkdown(input?: string | null): string {
+  if (!input) return "";
+  return input
+    .replace(/\r\n/g, "\n")
+    .replace(
+      new RegExp(`(<(?:${INLINE_TAGS})\\b[^>]*>)[ \\t]*\\n[ \\t]*`, "gi"),
+      "$1",
+    )
+    .replace(
+      new RegExp(`[ \\t]*\\n[ \\t]*(</(?:${INLINE_TAGS})\\s*>)`, "gi"),
+      "$1",
+    )
+    .trim();
+}
+
+/** Last-resort fallback: strip all tags so the value is guaranteed-valid MDX. */
+function stripHtml(input: string): string {
+  return input
+    .replace(/<\/?[a-z][^>]*>/gi, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .trim();
+}
 
 export interface MDXEditorFieldProps {
   label?: string;
@@ -68,35 +88,59 @@ export function MDXEditorField({
   error,
   required,
 }: MDXEditorFieldProps) {
-  const [editorInstance, setEditorInstance] = useState<MDXEditorMethods | null>(
-    null,
-  );
-  const isInternalChangeRef = useRef<boolean>(false);
-  const normalizedValue = useMemo(() => toMarkdown(value), [value]);
+  "use no memo";
 
-  // Sync value from the outside into MDXEditor whenever value changes or when editor finishes mounting
+  const editorRef = useRef<MDXEditorMethods | null>(null);
+  const [editorReady, setEditorReady] = useState(false);
+  // Markdown currently reflected in the editor (pushed by us or emitted by it),
+  // so editor edits are not echoed back and the caret is never clobbered.
+  const lastSyncedRef = useRef<string | null>(null);
+  const fallbackAppliedRef = useRef(false);
+
+  const editorMarkdown = useMemo(() => toEditorMarkdown(value), [value]);
+
+  const setInstance = useCallback((instance: MDXEditorMethods | null) => {
+    editorRef.current = instance;
+    setEditorReady(Boolean(instance));
+  }, []);
+
   useEffect(() => {
-    if (!editorInstance) return;
+    const instance = editorRef.current;
+    if (!editorReady || !instance) return;
+    if (lastSyncedRef.current === editorMarkdown) return;
 
-    if (isInternalChangeRef.current) {
-      isInternalChangeRef.current = false;
-      return;
-    }
-
+    lastSyncedRef.current = editorMarkdown;
     try {
-      const currentMarkdown = editorInstance.getMarkdown().trim();
-      if (currentMarkdown !== normalizedValue.trim()) {
-        editorInstance.setMarkdown(normalizedValue);
-      }
+      if (instance.getMarkdown().trim() === editorMarkdown) return;
+      instance.setMarkdown(editorMarkdown);
     } catch (e) {
       console.error("Failed to sync markdown:", e);
     }
-  }, [editorInstance, normalizedValue]);
+  }, [editorReady, editorMarkdown]);
 
-  const handleChange = (newMarkdown: string) => {
-    isInternalChangeRef.current = true;
-    onChange(newMarkdown);
-  };
+  const handleChange = useCallback(
+    (newMarkdown: string) => {
+      lastSyncedRef.current = newMarkdown;
+      onChange(newMarkdown);
+    },
+    [onChange],
+  );
+
+  // If MDXEditor still cannot parse the value (e.g. an unclosed tag), retry
+  // once with every tag stripped so the content is at least visible/editable.
+  const handleError = useCallback(() => {
+    const instance = editorRef.current;
+    if (!instance || fallbackAppliedRef.current) return;
+    fallbackAppliedRef.current = true;
+
+    const plain = stripHtml(toEditorMarkdown(value));
+    lastSyncedRef.current = plain;
+    try {
+      instance.setMarkdown(plain);
+    } catch (e) {
+      console.error("MDX markdown fallback failed:", e);
+    }
+  }, [value]);
 
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
@@ -117,9 +161,10 @@ export function MDXEditorField({
       >
         <div style={{ minHeight }} className="flex flex-col">
           <InitializedMDXEditor
-            editorRef={setEditorInstance}
-            markdown={normalizedValue}
+            editorRef={setInstance}
+            markdown={editorMarkdown}
             onChange={handleChange}
+            onError={handleError}
             placeholder={placeholder}
             contentEditableClassName="prose prose-sm sm:prose-base max-w-none px-4 py-3.5 focus:outline-none text-base-content leading-relaxed min-h-[300px]"
             className="chlps-mdx-editor"
