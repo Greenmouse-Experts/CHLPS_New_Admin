@@ -52,6 +52,8 @@ export type {} from "./Dropdown";
 export { Modal, ConfirmModal } from "./Modal";
 export { Tabs, TabPanel } from "./Tabs";
 export { RichTextField } from "./RichTextField";
+export { MDXEditorField } from "./MDXEditor";
+export type { MDXEditorFieldProps } from "./MDXEditor";
 export { ToastProvider, useToast, toast } from "./Toast";
 export {
   Shimmer,
