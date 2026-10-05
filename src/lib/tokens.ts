@@ -260,10 +260,22 @@ export function unwrapCount(payload: unknown, fallback = 0): number {
     const obj = payload as Record<string, unknown>;
     if (typeof obj.count === "number") return obj.count;
     if (typeof obj.total === "number") return obj.total;
+    if (typeof obj.totalCount === "number") return obj.totalCount;
+    if (typeof obj.totalItems === "number") return obj.totalItems;
+    if (typeof obj.count === "string" && !isNaN(Number(obj.count)))
+      return Number(obj.count);
+    if (typeof obj.total === "string" && !isNaN(Number(obj.total)))
+      return Number(obj.total);
     if (obj.data && typeof obj.data === "object") {
       const inner = obj.data as Record<string, unknown>;
       if (typeof inner.count === "number") return inner.count;
       if (typeof inner.total === "number") return inner.total;
+      if (typeof inner.totalCount === "number") return inner.totalCount;
+      if (typeof inner.totalItems === "number") return inner.totalItems;
+      if (typeof inner.count === "string" && !isNaN(Number(inner.count)))
+        return Number(inner.count);
+      if (typeof inner.total === "string" && !isNaN(Number(inner.total)))
+        return Number(inner.total);
     }
   }
   return fallback;

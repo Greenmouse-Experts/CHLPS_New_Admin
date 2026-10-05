@@ -1,7 +1,7 @@
 import ApiService from "@/lib/network/api";
 import { ApiUrls } from "@/lib/network/api_url";
 import { fail, ok } from "@/lib/network/entity/api_response";
-import { unwrapList, unwrapMessage } from "@/lib/tokens";
+import { unwrapCount, unwrapList, unwrapMessage } from "@/lib/tokens";
 import {
   Certificate,
   CertificatesApiResponse,
@@ -14,9 +14,43 @@ import {
 class CertificatesRepository {
   private _api = new ApiService();
 
-  public async list(): Promise<CertificatesApiResponse> {
-    const res = await this._api.getData<unknown>(ApiUrls.certificates);
-    if (res.success) return ok(unwrapList<Certificate>(res.data));
+  public async list(params?: {
+    page?: number | string;
+    limit?: number | string;
+    pageSize?: number | string;
+  }): Promise<CertificatesApiResponse & { total?: number }> {
+    const query = new URLSearchParams();
+    if (
+      params?.page !== undefined &&
+      params?.page !== null &&
+      params?.page !== ""
+    ) {
+      query.set("page", String(params.page));
+    }
+    if (
+      params?.limit !== undefined &&
+      params?.limit !== null &&
+      params?.limit !== ""
+    ) {
+      query.set("limit", String(params.limit));
+    }
+    if (
+      params?.pageSize !== undefined &&
+      params?.pageSize !== null &&
+      params?.pageSize !== ""
+    ) {
+      query.set("pageSize", String(params.pageSize));
+    }
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    const res = await this._api.getData<unknown>(
+      `${ApiUrls.certificates}${qs}`,
+    );
+    if (res.success) {
+      const items = unwrapList<Certificate>(res.data);
+      const total = unwrapCount(res.data, items.length);
+      const okRes = ok(items);
+      return { ...okRes, total };
+    }
     return fail(res.message || "Failed to fetch certificates");
   }
 
@@ -28,7 +62,9 @@ class CertificatesRepository {
       ApiUrls.studentMembershipCertificate(studentId, membershipId),
     );
     if (res.success && res.data) return ok(res.data as Certificate);
-    return fail(res.message || "Failed to fetch student membership certificate");
+    return fail(
+      res.message || "Failed to fetch student membership certificate",
+    );
   }
 
   public async getMembershipCertificatesAll(
@@ -46,7 +82,9 @@ class CertificatesRepository {
     return fail(res.message || "Failed to fetch membership certificates");
   }
 
-  public async getStudentCertificates(studentId: string): Promise<CertificatesApiResponse> {
+  public async getStudentCertificates(
+    studentId: string,
+  ): Promise<CertificatesApiResponse> {
     const res = await this._api.getData<unknown>(
       ApiUrls.studentCertificates(studentId),
     );

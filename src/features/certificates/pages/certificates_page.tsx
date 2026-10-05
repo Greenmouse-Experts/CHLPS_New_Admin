@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout, StatCard } from "@/components";
 import {
   Button,
@@ -16,12 +17,11 @@ import CustomTable, { columnType } from "@/components/tables/CustomTable";
 import { Actions } from "@/components/tables/pop-up";
 import PageLoader from "@/components/PageLoader";
 import { MedalStar, Calendar } from "iconsax-react";
-import { ExternalLink, Eye, Award, FileText } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import CertificatesRepository from "../domain/repository/certificates_repository";
 import {
   Certificate,
   CertStats,
-  CertTemplate,
 } from "../domain/data/response/certificates_response";
 import { formatDate } from "@/utils/helper/formate_date";
 
@@ -29,19 +29,14 @@ const PAGE_SIZE = 10;
 
 export default function CertificatesPage() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const repo = useMemo(() => new CertificatesRepository(), []);
   const certModalRef = useRef<ModalHandle>(null);
 
-  const [items, setItems] = useState<Certificate[]>([]);
-  const [stats, setStats] = useState<CertStats>({});
-  const [templates, setTemplates] = useState<CertTemplate[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isError, setIsError] = useState(false);
-  const [error, setError] = useState<unknown>(null);
   const [page, setPage] = useState(1);
   const [edit, setEdit] = useState<Certificate | null>(null);
   const [selectedCert, setSelectedCert] = useState<Certificate | null>(null);
-  const [fetchingCert, setFetchingCert] = useState(false);
+  const [_fetchingCert, setFetchingCert] = useState(false);
 
   const [form, setForm] = useState({
     certificateNumber: "",
@@ -53,35 +48,90 @@ export default function CertificatesPage() {
     type: "revoke" | "delete";
   } | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setIsError(false);
-    setError(null);
-    try {
-      const [list, st, tmpl] = await Promise.all([
-        repo.list(),
-        repo.stats(),
-        repo.listTemplates(),
-      ]);
-      if (list.success && list.data) setItems(list.data);
-      else {
-        setIsError(true);
-        setError(list.message || "Failed to load certificates");
+  // Queries
+  const certQuery = useQuery({
+    queryKey: ["certificates", page],
+    queryFn: async () => {
+      const res = await repo.list({ page });
+      if (!res.success) {
+        throw new Error(res.message || "Failed to load certificates");
       }
-      if (st.success && st.data) setStats(st.data);
-      if (tmpl.success && tmpl.data) setTemplates(tmpl.data);
-    } catch (err) {
-      setIsError(true);
-      setError(err);
-      toast("Failed to load certificates", "danger");
-    } finally {
-      setLoading(false);
-    }
-  }, [repo, toast]);
+      return {
+        items: res.data || [],
+        total: res.total ?? res.data?.length ?? 0,
+      };
+    },
+  });
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  const statsQuery = useQuery({
+    queryKey: ["certificates-stats"],
+    queryFn: async () => {
+      const res = await repo.stats();
+      return (res.data || {}) as CertStats;
+    },
+  });
+
+  const stats = statsQuery.data || {};
+
+  // Mutations
+  const updateMutation = useMutation({
+    mutationFn: async ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: typeof form;
+    }) => {
+      const res = await repo.update(id, payload);
+      if (!res.success) throw new Error(res.message || "Update failed");
+      return res;
+    },
+    onSuccess: (res) => {
+      toast(res.message || "Certificate updated", "success");
+      setEdit(null);
+      queryClient.invalidateQueries({ queryKey: ["certificates"] });
+      queryClient.invalidateQueries({ queryKey: ["certificates-stats"] });
+    },
+    onError: (err: any) => {
+      toast(err?.message || "Update failed", "danger");
+    },
+  });
+
+  const revokeMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await repo.revoke(id);
+      if (!res.success) throw new Error(res.message || "Failed to revoke");
+      return res;
+    },
+    onSuccess: (res) => {
+      toast(res.message || "Certificate revoked", "success");
+      setConfirm(null);
+      queryClient.invalidateQueries({ queryKey: ["certificates"] });
+      queryClient.invalidateQueries({ queryKey: ["certificates-stats"] });
+    },
+    onError: (err: any) => {
+      toast(err?.message || "Failed to revoke", "danger");
+      setConfirm(null);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await repo.remove(id);
+      if (!res.success) throw new Error(res.message || "Failed to delete");
+      return res;
+    },
+    onSuccess: (res) => {
+      toast(res.message || "Certificate deleted", "success");
+      setConfirm(null);
+      queryClient.invalidateQueries({ queryKey: ["certificates"] });
+      queryClient.invalidateQueries({ queryKey: ["certificates-stats"] });
+    },
+    onError: (err: any) => {
+      toast(err?.message || "Failed to delete", "danger");
+      setConfirm(null);
+    },
+  });
 
   const handleViewCertificate = async (r: Certificate) => {
     try {
@@ -91,7 +141,10 @@ export default function CertificatesPage() {
 
       // If student and membership IDs are available, fetch using /api/v1/certificates/student/:studentId/membership/:membershipId
       if (studentId && membershipId) {
-        const res = await repo.getStudentMembershipCertificate(studentId, membershipId);
+        const res = await repo.getStudentMembershipCertificate(
+          studentId,
+          membershipId,
+        );
         if (res.success && res.data) {
           setSelectedCert(res.data);
           certModalRef.current?.open();
@@ -101,7 +154,7 @@ export default function CertificatesPage() {
 
       setSelectedCert(r);
       certModalRef.current?.open();
-    } catch (err: any) {
+    } catch {
       setSelectedCert(r);
       certModalRef.current?.open();
     } finally {
@@ -109,10 +162,9 @@ export default function CertificatesPage() {
     }
   };
 
-  const paginatedItems = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE;
-    return items.slice(start, start + PAGE_SIZE);
-  }, [items, page]);
+  const items = certQuery.data?.items || [];
+  const totalCount =
+    certQuery.data?.total || stats.totalCertificates || items.length;
 
   const columns: columnType<Certificate>[] = useMemo(
     () => [
@@ -131,10 +183,14 @@ export default function CertificatesPage() {
         render: (_, r) => (
           <div className="space-y-0.5">
             <span className="text-sm font-semibold text-base-content whitespace-nowrap block">
-              {r.student ? `${r.student.firstName ?? ""} ${r.student.lastName ?? ""}`.trim() : "—"}
+              {r.student
+                ? `${r.student.firstName ?? ""} ${r.student.lastName ?? ""}`.trim()
+                : "—"}
             </span>
             {r.student?.email && (
-              <span className="text-xs text-base-content/60 block">{r.student.email}</span>
+              <span className="text-xs text-base-content/60 block">
+                {r.student.email}
+              </span>
             )}
           </div>
         ),
@@ -144,7 +200,10 @@ export default function CertificatesPage() {
         label: "Program / Source",
         render: (_, r) => {
           const isMembership = r.sourceType === "membership" || !!r.membership;
-          const title = r.membership?.name || r.course?.title || (isMembership ? "Membership" : "Course");
+          const title =
+            r.membership?.name ||
+            r.course?.title ||
+            (isMembership ? "Membership" : "Course");
           return (
             <div className="space-y-0.5">
               <span className="text-sm font-medium text-base-content whitespace-nowrap block">
@@ -219,19 +278,19 @@ export default function CertificatesPage() {
         <StatCard
           title="Total Certificates"
           value={stats.totalCertificates ?? 0}
-          loading={loading}
+          loading={statsQuery.isLoading}
           icon={<MedalStar size={20} color="#717171" />}
         />
         <StatCard
           title="This Month"
           value={stats.certificatesThisMonth ?? 0}
-          loading={loading}
+          loading={statsQuery.isLoading}
           icon={<Calendar size={20} color="#717171" />}
         />
         <StatCard
           title="This Year"
           value={stats.certificatesThisYear ?? 0}
-          loading={loading}
+          loading={statsQuery.isLoading}
           icon={<Calendar size={20} color="#717171" />}
         />
       </div>
@@ -262,21 +321,13 @@ export default function CertificatesPage() {
           </h2>
         </div>
         <Divider />
-        <PageLoader
-          query={{
-            data: items,
-            isLoading: loading,
-            isError,
-            error,
-            refetch: load,
-          }}
-        >
+        <PageLoader query={certQuery}>
           <CustomTable
             ring={false}
             columns={columns}
-            data={paginatedItems}
+            data={items}
             actions={actions}
-            totalCount={items.length}
+            totalCount={totalCount}
             paginationProps={{
               page,
               pageSize: PAGE_SIZE,
@@ -413,23 +464,13 @@ export default function CertificatesPage() {
             </Button>
             <Button
               variant="primary"
-              onClick={async () => {
+              disabled={updateMutation.isPending}
+              onClick={() => {
                 if (!edit) return;
-                try {
-                  const res = await repo.update(edit.id, form);
-                  if (res.success) {
-                    toast("Certificate updated", "success");
-                    setEdit(null);
-                    load();
-                  } else {
-                    toast(res.message || "Update failed", "danger");
-                  }
-                } catch {
-                  toast("Update failed", "danger");
-                }
+                updateMutation.mutate({ id: edit.id, payload: form });
               }}
             >
-              Save Changes
+              {updateMutation.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         </div>
@@ -450,30 +491,13 @@ export default function CertificatesPage() {
         }
         confirmLabel={confirm?.type === "revoke" ? "Revoke" : "Delete"}
         variant="danger"
-        onConfirm={async () => {
+        loading={revokeMutation.isPending || deleteMutation.isPending}
+        onConfirm={() => {
           if (!confirm) return;
-          try {
-            if (confirm.type === "revoke") {
-              const res = await repo.revoke(confirm.id);
-              if (res.success) {
-                toast("Certificate revoked", "success");
-                load();
-              } else {
-                toast(res.message || "Failed to revoke", "danger");
-              }
-            } else {
-              const res = await repo.remove(confirm.id);
-              if (res.success) {
-                toast("Certificate deleted", "success");
-                load();
-              } else {
-                toast(res.message || "Failed to delete", "danger");
-              }
-            }
-          } catch {
-            toast("Action failed", "danger");
-          } finally {
-            setConfirm(null);
+          if (confirm.type === "revoke") {
+            revokeMutation.mutate(confirm.id);
+          } else {
+            deleteMutation.mutate(confirm.id);
           }
         }}
         onClose={() => setConfirm(null)}
