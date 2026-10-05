@@ -178,7 +178,7 @@ export default function MembershipPage() {
           <StatCard
             title="Amount Paid"
             value={formatCurrency(stats.amountPaid ?? 0, {
-              currency: "NGN",
+              currency: "CAD",
               decimals: 0,
             })}
             loading={isLoading}

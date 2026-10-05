@@ -15,7 +15,7 @@ import { ImageUpload } from "@/components/ui/ImageUpload";
 import SimpleInput from "@/components/inputs/SimpleInput";
 import SimpleTextArea from "@/components/inputs/SimpleTextArea";
 import LocalSelect from "@/components/inputs/LocalSelect";
-import { MDXEditorField } from "@/components/ui/MDXEditor";
+import { WysiwygEditor } from "@/components/ui";
 import {
   ArrowLeft,
   Award,
@@ -601,7 +601,7 @@ export default function CourseEditorPage({ courseId }: { courseId?: string }) {
                       control={control}
                       rules={{ required: "Description is required" }}
                       render={({ field }) => (
-                        <MDXEditorField
+                        <WysiwygEditor
                           value={field.value || ""}
                           onChange={field.onChange}
                           minHeight="380px"
@@ -621,7 +621,7 @@ export default function CourseEditorPage({ courseId }: { courseId?: string }) {
                       name="fullDesc"
                       control={control}
                       render={({ field }) => (
-                        <MDXEditorField
+                        <WysiwygEditor
                           value={field.value || ""}
                           onChange={field.onChange}
                           minHeight="380px"
