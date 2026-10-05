@@ -1,6 +1,7 @@
 "use client";
 
 import type { ForwardedRef, Ref } from "react";
+import "@mdxeditor/editor/style.css";
 import {
   MDXEditor,
   type MDXEditorMethods,
