@@ -74,7 +74,7 @@ export default function CoursesPage() {
         label: "Price",
         render: (v) => (
           <span className="text-sm font-semibold text-base-content whitespace-nowrap">
-            {formatCurrency(Number(v) || 0, { currency: "USD" })}
+            {formatCurrency(Number(v) || 0, { currency: "CAD" })}
           </span>
         ),
       },
