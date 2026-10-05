@@ -9,6 +9,7 @@ import {
   ConfirmModal,
   Divider,
   ImageUpload,
+  MarkdownRenderer,
   Modal,
   Select,
   StatusBadge,
@@ -546,7 +547,7 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
 
                       {course.shortDesc && (
                         <div className="p-3 bg-base-200/50 rounded-xl border border-base-300/60 text-sm text-base-content/80 font-medium">
-                          {course.shortDesc}
+                          <MarkdownRenderer content={course.shortDesc} />
                         </div>
                       )}
                     </div>
@@ -631,14 +632,14 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
                         </h3>
                       </div>
                       <Divider />
-                      <div
-                        className="text-sm text-base-content leading-relaxed whitespace-pre-line"
-                        dangerouslySetInnerHTML={{
-                          __html:
-                            course.fullDesc ||
-                            "No detailed description available.",
-                        }}
-                      ></div>
+                      <MarkdownRenderer
+                        content={course.fullDesc}
+                        fallback={
+                          <p className="text-sm text-base-content/60 italic">
+                            No detailed description available.
+                          </p>
+                        }
+                      />
                     </div>
 
                     {/* Course Outcomes */}
@@ -687,7 +688,8 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
                     </div>
 
                     {/* Official Course Certification */}
-                    {(course.certificationImage || course.certificationText) && (
+                    {(course.certificationImage ||
+                      course.certificationText) && (
                       <div className="bg-white rounded-2xl border border-base-300 p-6 shadow-xs space-y-4">
                         <div className="flex items-center gap-2">
                           <Award size={18} className="text-primary" />
@@ -1229,12 +1231,17 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
                                                 <span className="text-emerald-700 text-[11px] font-medium flex items-center gap-1">
                                                   •{" "}
                                                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />{" "}
-                                                  {isAssessment ? "Image attached" : "Media attached"}
+                                                  {isAssessment
+                                                    ? "Image attached"
+                                                    : "Media attached"}
                                                 </span>
                                               )}
                                               {!hasMedia && (
                                                 <span className="text-base-content/40 text-[11px] flex items-center gap-1 italic">
-                                                  • {isAssessment ? "No image uploaded" : "No media uploaded"}
+                                                  •{" "}
+                                                  {isAssessment
+                                                    ? "No image uploaded"
+                                                    : "No media uploaded"}
                                                 </span>
                                               )}
                                             </div>
@@ -1272,7 +1279,9 @@ export default function CourseDetailPage({ courseId }: { courseId: string }) {
                                               }
                                             >
                                               <Eye size={13} />
-                                              {isAssessment ? "View Image" : "Preview Media"}
+                                              {isAssessment
+                                                ? "View Image"
+                                                : "Preview Media"}
                                               <ExternalLink
                                                 size={12}
                                                 className="opacity-60"

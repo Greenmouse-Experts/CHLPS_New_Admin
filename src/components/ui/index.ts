@@ -54,6 +54,8 @@ export { Tabs, TabPanel } from "./Tabs";
 export { RichTextField } from "./RichTextField";
 export { MDXEditorField } from "./MDXEditor";
 export type { MDXEditorFieldProps } from "./MDXEditor";
+export { MarkdownRenderer } from "./MarkdownRenderer";
+export type { MarkdownRendererProps } from "./MarkdownRenderer";
 export { ToastProvider, useToast, toast } from "./Toast";
 export {
   Shimmer,
