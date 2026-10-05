@@ -58,7 +58,7 @@ export interface EventItem {
 }
 
 export interface EventStats {
-  totalEvents?: number;
+  total?: number;
   totalThisMonth?: number;
   amountPaid?: number;
   upcomingEvents?: number;
@@ -130,7 +130,6 @@ export function labelOf<T extends { value: string; label: string }>(
   if (!value) return "";
   return list.find((item) => item.value === value)?.label ?? value;
 }
-
 
 export interface EventCategoryItem {
   id: string;

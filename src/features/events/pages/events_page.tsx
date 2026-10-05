@@ -207,7 +207,7 @@ export default function EventsPage() {
         <div className="grid sm:grid-cols-3 gap-4">
           <StatCard
             title="Total Events"
-            value={stats.totalEvents ?? 0}
+            value={stats.total ?? 0}
             loading={isLoading}
             icon={<Calendar size={20} color="#717171" />}
           />

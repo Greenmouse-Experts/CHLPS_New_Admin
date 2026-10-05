@@ -94,7 +94,7 @@ export interface EventFilterQueryDto extends PaginationQueryDto {
 }
 
 export interface EventStats {
-  totalEvents: number;
+  total: number;
   totalThisMonth: number;
   amountPaid: number;
   upcomingEvents: number;

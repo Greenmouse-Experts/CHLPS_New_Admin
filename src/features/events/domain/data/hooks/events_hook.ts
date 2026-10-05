@@ -22,7 +22,7 @@ export function useEvents() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [stats, setStats] = useState<EventStats>({
-    totalEvents: 0,
+    total: 0,
     totalThisMonth: 0,
     amountPaid: 0,
   });
