@@ -60,7 +60,7 @@ const DashboardPage = () => {
             />
             <StatCard
               title="Events"
-              value={analytics.instructors ?? 0}
+              value={analytics.events ?? 0}
               loading={isLoading}
               icon={<Profile2User size={20} color="#717171" />}
             />

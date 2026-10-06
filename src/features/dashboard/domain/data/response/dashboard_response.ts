@@ -5,6 +5,7 @@ export interface AnalyticsData {
   enrollment?: number;
   instructors?: number;
   students?: number;
+  events?: number;
 }
 
 export type AnalyticsApiResponse = ApiResponse<AnalyticsData>;
