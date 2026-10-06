@@ -651,7 +651,7 @@ export default function CourseEditorPage({ courseId }: { courseId?: string }) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <SimpleInput
-                      label="Price (CAD / Base)"
+                      label="Price (CAD)"
                       type="number"
                       step="0.01"
                       placeholder="5000"
